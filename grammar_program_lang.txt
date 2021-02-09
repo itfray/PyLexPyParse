@@ -1,0 +1,189 @@
+# ГРАММАТИКА
+
+
+# ===================================
+# сложение и вычитание списка цифр
+# ===================================
+list -> list + digit
+list -> list - digit
+list -> digit
+digit -> 0|1|2|3|4|5|6|7|8|9
+# ===================================
+
+
+# ===================================
+# вызов процедур
+# ===================================
+call -> id( optparams )
+optparams -> params | E
+params -> params, param | param
+
+E - пустой символ
+# ===================================
+
+
+# ===================================
+# правоассоциатвность
+# ===================================
+right -> letter = rigth | letter
+letter -> a|b|c|d|e|f|...|z
+# ===================================
+
+
+# ===================================
+# приоритет операторов
+# ===================================
+expr -> expr + term | expr - term | term
+term -> term * factor | term / factor | factor
+factor -> digit | (expr)
+# ===================================
+
+
+# ===================================
+# простой пример грамматики Java
+# ===================================
+stmt -> id = expression ;
+     |  if (expression) stmt
+     |  if (expression) stmt else stmt
+     |  while (expression) stmt
+     |  do stmt while (expression) ;
+     |  { stmts }
+stmts -> stmts stmt | E
+
+E - пустой символ
+# ===================================
+
+
+# ===================================
+# простой пример грамматики Java и C
+# ===================================
+stmt -> expr ;
+     |  if (expr) stmt
+     |  for ( optexpr ; optexpr ; optexpr ;) stmt
+     |  other
+optexpr -> E | expr
+
+E - пустой символ
+# ===================================
+
+
+# ===================================
+# предиктивный анализ
+# ===================================
+stmt -> for ( optexpr ; optexpr ; optexpr ) stmt
+
+	^    ^
+	|    |
+        v    v
+
+match(for); match('('); optexpr(); match(';');
+optexpr(); match(';'); optexpr(); match(')'); stmt();
+
+
+
+
+stmt -> expr ;
+     |  if (expr) stmt
+     |  for ( optexpr ; optexpr ; optexpr ;) stmt
+     |  other
+optexpr -> E | expr
+
+E - пустой символ
+
+	^    ^
+	|    |
+        v    v
+
+void stmt() {
+     switch (lookahead) {
+
+     case expr:
+          match(expr); match(';');
+     break;
+
+     case if:
+          match(if); match('('); match(expr); match(')'); stmt();
+     break;
+
+     case for:
+          match(for); match('('); 
+          optexpr(); match(';'); optexpr(); match(';'); 
+          optexpr(); match(')'); stmt();
+     break;
+
+     case other:
+          match(other);
+     break;
+
+     default:
+          report("syntax error");
+     }
+}
+
+void optexpr() {
+     if (lookahead == expr) match(expr);
+}
+
+void match(terminal t) {
+     if (lookahead == t) lookahead = nextTerminal;
+     else report("syntax error");
+}
+# ===================================
+
+
+# ===================================
+# устранение левой рекурсии
+# ===================================
+expr -> expr + term
+
+	^    ^
+	|    |
+        v    v
+
+expr -> expr + term | term
+# ===================================
+
+
+# ===================================
+# из левойрекурсивной продукции в праворекурсивную
+# ===================================
+A -> Aa | b
+
+<=>
+
+A -> bR
+R -> aR | E
+
+E - пустой символ
+# ===================================
+
+
+# ===================================
+# из левойрекурсивной продукции в праворекурсивную
+# ===================================
+A -> Aa | Ab | y
+
+<=>
+
+A -> yR
+R -> aR | bR | E
+
+E - пустой символ
+# ===================================
+
+
+# ===================================
+# грамматика выражения
+# ===================================
+expr -> expr + term
+     | expr - term
+     | term
+
+term -> term * factor
+     | term / factor
+     | factor
+
+factor -> (expr)
+       | num
+       | id
+# ===================================
