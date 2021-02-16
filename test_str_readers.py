@@ -1,5 +1,5 @@
 import unittest
-from str_reader import StrReader
+from str_reader import StrReader, FileStrReader
 
 
 class TestStrReaderCase(unittest.TestCase):
@@ -68,8 +68,39 @@ class TestStrReaderCase(unittest.TestCase):
 
 class TestFileStrReaderCase(unittest.TestCase):
     def test_init(self):
-        filename = ""
+        filename = "test_str_file.txt"
+        try:
+            reader = FileStrReader("")
+            self.assert_(False, "Must be raised FileNotFoundError!!! No such file or directory: ''!!!")
+        except FileNotFoundError as err:
+            pass
 
+        reader = FileStrReader(filename)
+        self.assertEqual(reader.DEF_BUF_SIZE, reader._FileStrReader__buf_size, "buf_size error!!!")
+        self.assertEqual(reader._FileStrReader__file is None, False, "file open error!!!")
+
+        reader = FileStrReader(filename, 200)
+        self.assertEqual(200, reader._FileStrReader__buf_size, "buf_size error!!!")
+
+        try:
+            reader = FileStrReader(filename, -2)
+            self.assert_(False, "Must be raised ValueError!!! buf_size must be greater 0!!!")
+        except ValueError as err:
+            pass
+
+    def test_set_file(self):
+        filename = "test_str_file.txt"
+        reader = FileStrReader(filename)
+        try:
+            reader.set_file('')
+            self.assert_(False, "Must be raised FileNotFoundError!!! No such file or directory: ''!!!")
+        except FileNotFoundError as err:
+            pass
+        self.assertEqual(reader._FileStrReader__file is None, True, "file close error!!!")
+        self.assertEqual(reader.filename(), "", "file close error!!!")
+        reader.set_file(filename)
+        self.assertEqual(not reader._FileStrReader__file is None, True, "file open error!!!")
+        self.assertEqual(reader.filename(), filename, "file open error!!!")
 
 
 if __name__ == '__main__':
