@@ -66,6 +66,11 @@ class TestStrReaderCase(unittest.TestCase):
         self.assertEqual(reader.has_data(), False, "has_data() error!!!")
 
 
+class TestFileStrReaderCase(unittest.TestCase):
+    def test_init(self):
+        filename = ""
+
+
 
 if __name__ == '__main__':
     unittest.main()
