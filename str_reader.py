@@ -158,18 +158,18 @@ class FileStrReader(IStrReader):
         self.close()
 
 
-if __name__ == "__main__":
-    data = ""
-    filename = "test_str_file.txt"
-
-    reader = FileStrReader(filename=filename, buffering=768)
-    while reader.has_data():
-        readed = reader.read(38)
-        print(readed, end="")
-        data += readed
-
-    print('\n')
-
-    reader = StrReader(data)
-    while reader.has_data():
-        print(reader.read(38), end="")
+# if __name__ == "__main__":
+#     data = ""
+#     filename = "test_str_file.txt"
+#
+#     reader = FileStrReader(filename=filename, buffering=768)
+#     while reader.has_data():
+#         readed = reader.read(38)
+#         print(readed, end="")
+#         data += readed
+#
+#     print('\n')
+#
+#     reader = StrReader(data)
+#     while reader.has_data():
+#         print(reader.read(38), end="")
