@@ -1,6 +1,6 @@
 import abc
-from typing import IO
 import os
+import time
 
 
 class IStrReader(abc.ABC):
@@ -32,18 +32,10 @@ class IStrReader(abc.ABC):
         """
         return False
 
-    # @abc.abstractmethod
-    # def readline(self)-> str:
-    #     pass
-    #
-    # @abc.abstractmethod
-    # def readlines(self):
-    #     pass
-
 
 class StrReader(IStrReader):
-    __buf: str                              # string buffer
-    __pos: int                              # current position in string buffer
+    __data: str                              # string buffer
+    __pos: int                               # current position in string buffer
 
     def __init__(self, data = ""):
         super().__init__()
@@ -53,102 +45,81 @@ class StrReader(IStrReader):
         self.__pos = 0
 
     def set_data(self, data: str):
-        self.__buf = data
+        self.__data = data
         self.reset()
 
     def read(self, count = 1):
         if count < 1:
             raise ValueError("count must be greater 0!!!")
-        ans = self.__buf[self.__pos: self.__pos + count]
+        ans = self.__data[self.__pos: self.__pos + count]
         self.__pos += len(ans)
         return ans
 
     def has_data(self):
-        return self.__pos < len(self.__buf)
+        return self.__pos < len(self.__data)
 
 
 class FileStrReader(IStrReader):
-    DEF_BUF_SIZE = 256
-    __buf: str
-    __buf_size: int
-    __pos: int
+    DEFAULT_BUFFERING = -1
+    DEFAULT_ENCODING = 'utf-8'
     __file = None
     __file_size: int
 
-    def __init__(self, **kwargs):
+    def __init__(self, filename="", **kwargs):
         super().__init__()
-        filename = kwargs.get("filename", None)
-        buf_size = kwargs.get("buf_size", self.DEF_BUF_SIZE)
-        if filename:
-            self.open(filename)
-        self.set_buf_size(buf_size)
-
-    def set_buf_size(self, size: int):
-        if size <= 0:
-            raise ValueError("Uncorrect buf size!!!")
-        self.__buf_size = size
+        if len(filename) > 0:
+            self.open(filename, **kwargs)
 
     def close(self):
         if not self.__file is None:
             self.__file.close()
         self.__file = None
-        self.reset()
 
-    def open(self, filename: str):
+    def open(self, filename: str, **kwargs):
         try:
-            self.reset()
-            self.__file = open(filename, mode='r', encoding='utf-8')
+            buffering = kwargs.get("buffering", self.DEFAULT_BUFFERING)
+            encoding = kwargs.get("encoding", self.DEFAULT_ENCODING)
+            self.__file = open(filename, 'r', buffering, encoding)
             self.__file_size = os.stat(filename).st_size
         except Exception as err:
             self.close()
             raise err
 
     def reset(self) -> None:
-        self.__buf = ""
-        self.__pos = 0
         if not self.__file is None:
             self.__file.seek(0)
 
     def read(self, count: int) -> str:
         if self.__file is None:
-            raise FileNotFoundError("Can not read data from file!!! Opened file is not found!!!")
+            raise OSError("Can not read data from file!!! Opened file is not found!!!")
         if count < 1:
             raise ValueError("count must be greater 0!!!")
-        eof = False
-        size_data = count if count > self.__buf_size else self.__buf_size
-        new_pos = self.__pos + count
-        if new_pos > len(self.__buf):
-            data = self.__file.read(size_data)
-            self.__buf = data if self.__pos >= len(self.__buf) else\
-                         self.__buf[self.__pos: len(self.__buf)] + data
-            self.__pos = 0
-            new_pos = count
-            eof = len(data) < size_data and new_pos >= len(self.__buf)
-        ans = self.__buf[self.__pos: new_pos]
-        if eof:
-            self.__buf = ""
-        else:
-            self.__pos += len(ans)
-        return ans
+        return self.__file.read(count)
 
     def has_data(self):
-        if self.__file is None:
-            return False
-        return self.__file.tell() < self.__file_size or len(self.__buf) > 0
-
+        return False if self.__file is None else self.__file.tell() < self.__file_size
 
     def filename(self)-> str:
-        if self.__file is None:
-            return ""
-        return self.__file.name
+        return "" if self.__file is None else self.__file.name
 
     def __del__(self):
         self.close()
 
 
-
 if __name__ == "__main__":
+    data = "Hello\nMy\nWorld!!!"
     filename = "test_str_file.txt"
-    reader = FileStrReader(filename=filename)
+
+    t0 = time.time()
+    reader = FileStrReader(filename=filename, buffering=-1)
     while reader.has_data():
-        print(reader.read(10), end="")
+        print(reader.read(38), end="")
+
+    print()
+    print()
+    print(time.time() - t0, "sec")
+    print()
+
+    reader = StrReader(data)
+    while reader.has_data():
+        print(reader.read(1), end="")
