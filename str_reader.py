@@ -107,19 +107,17 @@ class FileStrReader(IStrReader):
 
 
 if __name__ == "__main__":
-    data = "Hello\nMy\nWorld!!!"
+    data = ""
     filename = "test_str_file.txt"
 
-    t0 = time.time()
-    reader = FileStrReader(filename=filename, buffering=-1)
+    reader = FileStrReader(filename=filename, buffering=768)
     while reader.has_data():
-        print(reader.read(38), end="")
+        readed = reader.read(38)
+        print(readed, end="")
+        data += readed
 
-    print()
-    print()
-    print(time.time() - t0, "sec")
-    print()
+    print('\n')
 
     reader = StrReader(data)
     while reader.has_data():
-        print(reader.read(1), end="")
+        print(reader.read(38), end="")
