@@ -1,0 +1,1 @@
+from .istr_reader import IStrReader
