@@ -16,17 +16,10 @@ class ILexer(abc.ABC):
     ILexer is interface of lexical analyzer for strings analyzing
     """
     @abc.abstractmethod
-    def token(self)-> Token:
+    def tokens(self):
         """
-        Peforms search lexeme in string data
-        :return: tokenized part of data i.e. token
-        """
-
-    @abc.abstractmethod
-    def reset(self)-> None:
-        """
-        Reset lexer in init state of analyzing
-        :return: None
+        Peforms search lexemes in string data
+        :return: tokenized parts of data i.e. tokens
         """
 
     @property
@@ -53,3 +46,12 @@ class LexerError(Exception):
     """
     def __init__(self, *args):
         self.args = args
+
+
+class UnknownLexemeError(LexerError):
+    """
+     LexerError is class of lexical errors for lexical analyzer ILexer.
+     Raise when Lexer meet unknown lexeme.
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
