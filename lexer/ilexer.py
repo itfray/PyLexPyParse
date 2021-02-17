@@ -21,7 +21,6 @@ class ILexer(abc.ABC):
         Peforms search lexeme in string data
         :return: tokenized part of data i.e. token
         """
-        pass
 
     @abc.abstractmethod
     def reset(self)-> None:
@@ -29,12 +28,20 @@ class ILexer(abc.ABC):
         Reset lexer in init state of analyzing
         :return: None
         """
-        pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def data_reader(self)-> IStrReader:
         """
         Property for work with string data reader
         :return: string data reader IStrReader
         """
-        pass
+
+    @data_reader.setter
+    @abc.abstractmethod
+    def data_reader(self, value: IStrReader)-> None:
+        """
+        Property.setter for work with string data reader
+        :param value: string reader IStrReader
+        :return: None
+        """

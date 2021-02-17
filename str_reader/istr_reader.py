@@ -10,7 +10,6 @@ class IStrReader(abc.ABC):
         Reset buffer to init state
         :return: None
         """
-        return
 
     @abc.abstractmethod
     def read(self, count: int)-> str:
@@ -19,7 +18,6 @@ class IStrReader(abc.ABC):
         :param count: number of read chars from string buffer
         :return: string of read chars
         """
-        return ""
 
     @abc.abstractmethod
     def has_data(self)-> bool:
@@ -27,4 +25,3 @@ class IStrReader(abc.ABC):
         Has yet data in string buffer?
         :return: True or False
         """
-        return False
