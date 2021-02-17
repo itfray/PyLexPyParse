@@ -45,3 +45,11 @@ class ILexer(abc.ABC):
         :param value: string reader IStrReader
         :return: None
         """
+
+
+class LexerError(Exception):
+    """
+     LexerError is class of errors for lexical analyzer ILexer
+    """
+    def __init__(self, *args):
+        self.args = args
