@@ -25,7 +25,7 @@ class Lexer(ILexer):
         self.tables = {
             self.KEYWORD: ('IF', 'THEN', 'ELSE'),
             self.DELIM: (';', '(', ')'),
-            self.OPASN: (":="),
+            self.OPASN: (":=",),
             self.NUMBER: [],
             self.ID: []
         }
@@ -147,3 +147,5 @@ if __name__ == "__main__":
     lexer = Lexer(data_reader=StrReader(statement))
     for token in lexer.tokens():
         print(token)
+
+    print()
