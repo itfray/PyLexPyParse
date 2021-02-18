@@ -60,17 +60,6 @@ class FileStrReader(IStrReader):
             raise ValueError("count must be greater 0!!!")
         return self.__file.read(count)
 
-    def has_data(self):
-        """
-        Has yet data in file?
-        :return: True or False
-        """
-        offset = self.__file.tell()
-        ch = self.__file.read(1)
-        eof = len(ch) == 0
-        self.__file.seek(offset)
-        return False if self.__file is None else not eof
-
     def filename(self)-> str:
         """
         :return: string filename

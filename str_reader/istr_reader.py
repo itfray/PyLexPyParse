@@ -18,10 +18,3 @@ class IStrReader(abc.ABC):
         :param count: number of read chars from string buffer
         :return: string of read chars
         """
-
-    @abc.abstractmethod
-    def has_data(self)-> bool:
-        """
-        Has yet data in string buffer?
-        :return: True or False
-        """
