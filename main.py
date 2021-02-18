@@ -1,5 +1,5 @@
 from str_reader.str_reader import StrReader
-# from str_reader.file_reader import FileStrReader
+from str_reader.file_reader import FileStrReader
 from lexer import Token, ILexer
 from lexer.lexer import Lexer
 import time
@@ -18,11 +18,19 @@ token_specification = [
     ('MISMATCH', r'.', ()),
 ]
 
-reader = StrReader(stmt)
-# reader = FileStrReader('test_code.txt', buffering=1024)
+
+# reader = StrReader(stmt)
+reader = FileStrReader('test_code.txt', buffering=1024)
 lexer = Lexer(data_reader=reader, specification=token_specification)
 
 t0 = time.time()
+lines = 1
 for token in lexer.tokens():
-    print(token)
+    if token.kind == "NEWLINE":
+        lines += 1
+    print(token, end="; ")
+    print("line: ", lines)
+    if lines >= 3883:
+        print()
 print(time.time() - t0, " sec")
+print(lines)

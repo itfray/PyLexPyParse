@@ -18,19 +18,26 @@ class Lexer(ILexer):
             raise NoneDataReaderError("Data reader is None!!!")
 
         self.__data_reader.reset()
-        if not self.__data_reader.has_data() or len(self.specification) == 0:
+        size_data = 256
+        data = self.__data_reader.read(size_data)
+        if len(data) == 0 or len(self.specification) == 0:
             return
 
-        size_data = 256
-        max_size_data = 1024
-
-        data = self.__data_reader.read(size_data)
         pos = 0
+        endpos = data.find('\n', pos, len(data))
         while True:
-            mtch = self.__token_regex.match(data, pos, len(data))
+            if endpos == -1:
+                next_data = self.__data_reader.read(size_data)
+                if len(next_data) > 0:
+                    data += next_data
+                    endpos = data.find('\n', pos + 1, len(data))
+            if endpos == -1:
+                endpos = len(data) - 1
+            mtch = self.__token_regex.match(data, pos, endpos + 1)
             if mtch is None:
-                if self.__data_reader.has_data():
-                    data += self.__data_reader.read(size_data)
+                next_data = self.__data_reader.read(size_data)
+                if len(next_data) > 0:
+                    data += next_data
                     continue
                 break
             kind = mtch.lastgroup
@@ -39,9 +46,15 @@ class Lexer(ILexer):
                 proc()
             yield Token(kind, value)
             pos = mtch.end()
-            if pos + 1 >= max_size_data:
+            if pos >= size_data:
                 data = data[pos:]
+                endpos -= pos
                 pos = 0
+            if pos >= endpos:
+                endpos = data.find('\n', pos + 1, len(data))
+
+        if pos < len(data):
+            raise UnknownLexemeError(f"Unknown symbol {data[pos]}!!!")
 
     @property
     def specification(self)-> list:

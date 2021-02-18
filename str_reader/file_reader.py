@@ -1,5 +1,4 @@
 from .istr_reader import IStrReader
-import os
 
 
 class FileStrReader(IStrReader):
@@ -9,7 +8,6 @@ class FileStrReader(IStrReader):
     DEFAULT_BUFFERING = -1                           # size buffer for reading from file
     DEFAULT_ENCODING = 'utf-8'                       # what encoding for reading from file
     __file = None                                    # handler of file
-    __file_size: int                                 # size of file (number of bytes)
 
     def __init__(self, filename="", **kwargs):
         super().__init__()
@@ -38,7 +36,6 @@ class FileStrReader(IStrReader):
             buffering = kwargs.get("buffering", self.DEFAULT_BUFFERING)
             encoding = kwargs.get("encoding", self.DEFAULT_ENCODING)
             self.__file = open(filename, 'r', buffering, encoding)
-            self.__file_size = os.stat(filename).st_size
         except Exception as err:
             self.close()
             raise err
@@ -68,7 +65,11 @@ class FileStrReader(IStrReader):
         Has yet data in file?
         :return: True or False
         """
-        return False if self.__file is None else self.__file.tell() < self.__file_size
+        offset = self.__file.tell()
+        ch = self.__file.read(1)
+        eof = len(ch) == 0
+        self.__file.seek(offset)
+        return False if self.__file is None else not eof
 
     def filename(self)-> str:
         """
