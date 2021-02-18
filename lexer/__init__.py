@@ -1,2 +1,2 @@
-from .ilexer import (Token, ILexer, LexerError,
-                     UnknownLexemeError, NoneDataReaderError)
+from .ilexer import (Token, ILexer, LexerError, NoneDataReaderError,
+                     UnknownLexemeError)

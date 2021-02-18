@@ -48,19 +48,19 @@ class LexerError(Exception):
         self.args = args
 
 
-class UnknownLexemeError(LexerError):
+class NoneDataReaderError(LexerError):
     """
-     UnknownLexemeError is class of lexical errors for lexical analyzer ILexer.
-     Raise when Lexer meet unknown lexeme.
+     NoneDataReaderError is class of errors for lexical analyzer ILexer
+     Raise when lexer's data reader not found (is None).
     """
     def __init__(self, *args):
         super().__init__(*args)
 
 
-class NoneDataReaderError(LexerError):
+class UnknownLexemeError(LexerError):
     """
-     NoneDataReaderError is class of errors for lexical analyzer ILexer
-     Raise when lexer's data reader not found (is None).
+     UnknownLexemeError is class of lexical errors for lexical analyzer ILexer.
+     Raise when Lexer meet unknown lexeme.
     """
     def __init__(self, *args):
         super().__init__(*args)

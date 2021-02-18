@@ -21,8 +21,8 @@ class Lexer(ILexer):
         if not self.__data_reader.has_data() or len(self.specification) == 0:
             return
 
-        size_data = 128
-        max_size_data = 256
+        size_data = 256
+        max_size_data = 1024
 
         data = self.__data_reader.read(size_data)
         pos = 0
