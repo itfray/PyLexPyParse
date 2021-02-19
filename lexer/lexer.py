@@ -30,13 +30,18 @@ class Lexer(ILexer):
         if len(data) == 0 or len(self.specification) == 0:
             return
 
-        self.__num_line = 1
-        self.__num_column = 1
+        self.__num_line = 1             # number of line
+        self.__num_column = 1           # number of column
+        newline_flag = False            # endpos is newline character?
+        start_line = -1                 # position start line
 
         pos = 0                          # set current pos in data
         endpos = -1                      # pos newline character or end pos of portion data
         while True:
-            if pos >= endpos:
+            if pos >= endpos + 1:
+                if newline_flag:
+                    self.__num_line += 1
+                    start_line = pos - 1
                 endpos = data.find('\n', endpos + 1, len(data))                  # try find newline character
                 if endpos == -1:
                     next_data = self.__data_reader.read(self.size_read_data)     # try find newline in next portion
@@ -45,6 +50,7 @@ class Lexer(ILexer):
                         endpos = data.find('\n', pos + 1, len(data))
                     if endpos == -1:                                             # if still can't find newline
                         endpos = len(data) - 1                                   # set in end of data
+                newline_flag = data[endpos] == '\n'
 
             mtch = self.__token_regex.match(data, pos, endpos + 1)               # find matches of lexeme
             if mtch is None:
@@ -53,6 +59,8 @@ class Lexer(ILexer):
                     data += next_data
                     continue
                 break
+
+            self.__num_column = mtch.start() - start_line
 
             kind = mtch.lastgroup                       # define kind and value of lexeme
             value = mtch.group()
@@ -67,15 +75,24 @@ class Lexer(ILexer):
                 pos = 0
 
         if pos < len(data):
-            raise UnknownLexemeError(f"Unknown symbol '{data[pos]}'"\
+            self.__num_column += 1
+            raise UnknownLexemeError(f"Unknown character '{data[pos]}'" +
                                      f" in line {self.__num_line} in column {self.__num_column}!!!")
 
     @property
     def num_line(self):
+        """
+        Get number of current processed line
+        :return: number of line
+        """
         return self.__num_line
 
     @property
     def num_column(self):
+        """
+        Get number of current processed column
+        :return: number of column
+        """
         return self.__num_column
 
     @property

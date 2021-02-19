@@ -4,7 +4,9 @@ from lexer.lexer import Lexer
 from time import time
 
 
-stmt = """\na := 0;\t       \n_b := 123;\n"""
+stmt = """\na := 0;\t       \n_b := 123;+\n"""
+filename = "test_code.txt"
+
 token_specification = [
     ('ID', r'(_|[A-Za-z]){1}(_|[A-Za-z]|\d)*', ()),
     ('NUMBER', r'\d+', ()),
@@ -15,12 +17,10 @@ token_specification = [
     ('MISMATCH', r'.', ()),
 ]
 
-
-# reader = StrReader(stmt)
-reader = FileStrReader('test_code.txt', buffering=1024)
+reader = StrReader(stmt)
+# reader = FileStrReader(filename, buffering=1024)
 lexer = Lexer(data_reader=reader, specification=token_specification)
 t0 = time()
 for token in lexer.tokens():
     print(f"{lexer.num_line}:{lexer.num_column} : {token}")
-print(f"{lexer.num_line} lines...")
 print(time() - t0, " sec...")
