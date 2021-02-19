@@ -11,7 +11,7 @@ class Lexer(ILexer):
 
     def __init__(self, **kwargs):
         self.data_reader = kwargs.get("data_reader", None)
-        self.specification = kwargs.get("specification", [])                  # [('KIND', '[A-Za-z]', (lambda: ...))]
+        self.specification = kwargs.get("specification", [])                  # [('KIND', '[A-Za-z]', (lambda: ...,))]
 
     def tokens(self):
         if self.__data_reader is None:

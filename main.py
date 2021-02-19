@@ -30,7 +30,5 @@ for token in lexer.tokens():
         lines += 1
     print(token, end="; ")
     print("line: ", lines)
-    if lines >= 3883:
-        print()
 print(time.time() - t0, " sec")
 print(lines)
