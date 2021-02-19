@@ -3,12 +3,21 @@ from typing import NamedTuple
 from str_reader import IStrReader
 
 
-class Token(NamedTuple):
+class Token:
     """
     Token is class for tokenization of data
     """
     kind: str
     value: str
+    def __init__(self, kind = "", value = ""):
+        self.kind = kind
+        self.value = value
+
+    def __str__(self)-> str:
+        return f"Token(kind='{self.kind}'; value='{self.value}')"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class ILexer(abc.ABC):

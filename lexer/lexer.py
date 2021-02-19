@@ -9,7 +9,7 @@ class Lexer(ILexer):
     """
     DEFAULT_SIZE_READ_DATA = 256         # default size one portion of read data
     __data_reader: IStrReader            # reader of string data
-    __specification: list                # lexical specification. Example: [('KIND', '[Regex]', (func, ...)), ...]
+    __specification: tuple                # lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
     __token_regex: None                  # compiled specification in regex
     __token_procs: dict                  # dictionary of callback procedures from specification
     __size_read_data: int                # size one portion of read data
@@ -19,7 +19,7 @@ class Lexer(ILexer):
     def __init__(self, **kwargs):
         self.data_reader = kwargs.get("data_reader", None)
         self.size_read_data = kwargs.get("size_read_data", self.DEFAULT_SIZE_READ_DATA)
-        self.specification = kwargs.get("specification", [])
+        self.specification = kwargs.get("specification", ())
 
     def tokens(self):
         if self.__data_reader is None:                                # checks data reader
@@ -64,9 +64,10 @@ class Lexer(ILexer):
 
             kind = mtch.lastgroup                       # define kind and value of lexeme
             value = mtch.group()
+            token = Token(kind, value)
             for proc in self.__token_procs[kind]:       # call all callback functions for lexeme
-                proc()
-            yield Token(kind, value)
+                proc(token)
+            yield token
 
             pos = mtch.end()                            # set new pos
             if pos >= self.size_read_data:              # remove processed portion of data
@@ -115,22 +116,23 @@ class Lexer(ILexer):
         self.__size_read_data = value
 
     @property
-    def specification(self)-> list:
+    def specification(self)-> tuple:
         """
         Get lexical specification
-        :return: list of lexical specification. Example: [('KIND', '[Regex]', (func, ...)), ...]
+        :return: tuple of lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
         """
-        return self.__specification.copy()
+        return self.__specification
 
     @specification.setter
-    def specification(self, value: list)-> None:
+    def specification(self, value: tuple)-> None:
         """
         Set lexical specification
-        :param value: list of lexical specification. Example: [('KIND', '[Regex]', (func, ...)), ...]
+        :param value: tuple of lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
         :return: None
         """
-        if value is None: return
-        self.__specification = value.copy()
+        if value is None:
+            raise ValueError("specification must be is not None!!!")
+        self.__specification = value
         # compile specification in regex
         self.__token_regex = re.compile("|".join("(?P<%s>%s)" % (kind, reg)
                                                  for kind, reg, _ in self.__specification))
