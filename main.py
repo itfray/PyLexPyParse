@@ -32,3 +32,4 @@ for token in lexer.tokens():
     print("line: ", lines)
 print(time.time() - t0, " sec")
 print(lines)
+print(lexer._num_line)

@@ -73,11 +73,11 @@ class Lexer(ILexer):
 
     @property
     def _num_line(self):
-        return self._num_line
+        return self.__num_line
 
     @property
     def _num_column(self):
-        return self._num_column
+        return self.__num_column
 
     @property
     def specification(self)-> list:
