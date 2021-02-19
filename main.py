@@ -4,18 +4,17 @@ from lexer.prog_lang_lexer import ProgLangLexer
 from time import time
 
 
-
 skip_kind = 'SKIP'
 id_kind = 'ID'
 keyword_kind = 'KEYWORD'
 keywords = ('if', 'then', 'begin', 'end')
 token_specification = [
-    ('ID', r'(_|[A-Za-z]){1}(_|[A-Za-z]|\d)*', ()),
-    ('NUMBER', r'\d+', ()),
-    ('OPASN', r':=', ()),
-    ('DELIM', r'[;,()]', ()),
-    ('SKIP', r'[\s\t]+', ()),
-    ('MISMATCH', r'.', ())
+    ('ID', r'(_|[A-Za-z]){1}(_|[A-Za-z]|\d)*'),
+    ('NUMBER', r'\d+'),
+    ('OPASN', r':='),
+    ('DELIM', r'[;,()]'),
+    ('SKIP', r'[\s\t]+'),
+    ('MISMATCH', r'.')
 ]
 
 stmt = """

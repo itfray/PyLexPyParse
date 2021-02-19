@@ -9,9 +9,8 @@ class Lexer(ILexer):
     """
     DEFAULT_SIZE_READ_DATA = 256         # default size one portion of read data
     __data_reader: IStrReader            # reader of string data
-    __specification: tuple                # lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
+    __specification: tuple                # lexical specification. Example: (('KIND','[Regex]'),...)
     __token_regex: None                  # compiled specification in regex
-    __token_procs: dict                  # dictionary of callback procedures from specification
     __size_read_data: int                # size one portion of read data
     __num_line = 1                       # current processed line
     __num_column = 1                     # current processed column
@@ -64,10 +63,7 @@ class Lexer(ILexer):
 
             kind = mtch.lastgroup                       # define kind and value of lexeme
             value = mtch.group()
-            token = Token(kind, value)
-            for proc in self.__token_procs[kind]:       # call all callback functions for lexeme
-                proc(token)
-            yield token
+            yield Token(kind, value)                    # return token
 
             pos = mtch.end()                            # set new pos
             if pos >= self.size_read_data:              # remove processed portion of data
@@ -119,7 +115,7 @@ class Lexer(ILexer):
     def specification(self)-> tuple:
         """
         Get lexical specification
-        :return: tuple of lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
+        :return: tuple of lexical specification. Example: (('KIND','[Regex]'),...)
         """
         return self.__specification
 
@@ -127,17 +123,14 @@ class Lexer(ILexer):
     def specification(self, value: tuple)-> None:
         """
         Set lexical specification
-        :param value: tuple of lexical specification. Example: (('KIND','[Regex]',(func(token),...)),...)
+        :param value: tuple of lexical specification
         :return: None
         """
         if value is None:
             raise ValueError("specification must be is not None!!!")
         self.__specification = value
         # compile specification in regex
-        self.__token_regex = re.compile("|".join("(?P<%s>%s)" % (kind, reg)
-                                                 for kind, reg, _ in self.__specification))
-        # prepare dict with callback functions
-        self.__token_procs = {kind: procs for kind, _, procs in self.__specification}
+        self.__token_regex = re.compile("|".join("(?P<%s>%s)" % rule for rule in self.__specification))
 
     @property
     def data_reader(self)-> IStrReader:
