@@ -26,11 +26,13 @@ KEYWORDS = ('and', 'array', 'as', 'begin',
             'virtual', 'write')
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
+    # ('COMMENT', r'({.*}|\(\*.*\*\)|//.*?)'),
+    ('COMMENT', r'(//.*)'),
     (ID_KIND, r'(_|\w){1}(_|\w|\d)*'),
     ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
     ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
-    ('OPASN', r':='),
-    ('OPARITHM', r'[-\*\+/]'),
+    ('OP_ASN', r':='),
+    ('OP_ARTM', r'[-\*\+/]'),
     ('DELIM', r'[:;,()\.]'),
 ]
 
@@ -58,11 +60,17 @@ if __name__ == "__main__":
     begin
         a := 0;
         if (a) then
-            _b := -123.0;
+            _b := -123.0;       // Hello, my world!!!
         result := +3.3E+6;
         kek := $C000fd;
         result := kek / result;
     end.
+    
+    {
+    
+        Многострочный комментарий!!!
+    
+    }
     """
     data_reader = StrReader(stmt)
 
