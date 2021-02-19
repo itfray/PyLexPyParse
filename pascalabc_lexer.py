@@ -9,8 +9,9 @@ ID_KIND = 'ID'
 KEYWORD_KIND = 'KEYWORD'
 KEYWORDS = ('if', 'then', 'begin', 'end')
 SPECIFICATION = [
-    (ID_KIND, r'(_|[A-Za-z]){1}(_|[A-Za-z]|\d)*'),
+    (ID_KIND, r'(_|\w){1}(_|\w|\d)*'),
     ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
+    ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
     ('OPASN', r':='),
     (SKIP_KIND, r'[\s\t]+'),
     ('DELIM', r'[;,()]'),
@@ -18,16 +19,16 @@ SPECIFICATION = [
 
 """
 ID: r'''
-    (_|[A-Za-z]){1}             # first character in identidier
-    (_|[A-Za-z]|\d)*            # remaining characters
+    (_|\w){1}                # first character in identidier
+    (_|\w|\d)*               # remaining characters
     ''',
 
-NUMBER: r'''
-         (\+|-)?                # sign of number
-         \d+                    # integer part
-         (\.\d+)?               # float part
-         ((e|E)(\+|-)?\d+)?     # decimal order
-         '''
+NUM: r'''
+      (\+|-)?                # sign of number
+      \d+                    # integer part
+      (\.\d+)?               # float part
+      ((e|E)(\+|-)?\d+)?     # decimal order
+      '''
 """
 
 
@@ -40,6 +41,7 @@ if __name__ == "__main__":
         if (a) then
             _b := -123.0;
         result := +3.3E+6;
+        kek := $C000fd;
     """
     data_reader = StrReader(stmt)
 
