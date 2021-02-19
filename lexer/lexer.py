@@ -4,15 +4,18 @@ import re
 
 
 class Lexer(ILexer):
+    DEFAULT_SIZE_READ_DATA = 256
     __data_reader: IStrReader
     __specification: list
     __token_regex: None
     __token_procs: dict
+    __size_read_data: int
     __num_line = 1
     __num_column = 1
 
     def __init__(self, **kwargs):
         self.data_reader = kwargs.get("data_reader", None)
+        self.size_read_data = kwargs.get("size_read_data", self.DEFAULT_SIZE_READ_DATA)
         self.specification = kwargs.get("specification", [])                  # [('KIND', '[A-Za-z]', (lambda: ...,))]
 
     def tokens(self):
@@ -20,8 +23,7 @@ class Lexer(ILexer):
             raise NoneDataReaderError("Data reader is None!!!")
 
         self.__data_reader.reset()
-        size_data = 256
-        data = self.__data_reader.read(size_data)
+        data = self.__data_reader.read(self.size_read_data)
         if len(data) == 0 or len(self.specification) == 0:
             return
 
@@ -35,7 +37,7 @@ class Lexer(ILexer):
         newline = endpos != -1
         while True:
             if endpos == -1:
-                next_data = self.__data_reader.read(size_data)
+                next_data = self.__data_reader.read(self.size_read_data)
                 if len(next_data) > 0:
                     data += next_data
                     endpos = data.find('\n', pos + 1, len(data))
@@ -44,7 +46,7 @@ class Lexer(ILexer):
                 endpos = len(data) - 1
             mtch = self.__token_regex.match(data, pos, endpos + 1)
             if mtch is None:
-                next_data = self.__data_reader.read(size_data)
+                next_data = self.__data_reader.read(self.size_read_data)
                 if len(next_data) > 0:
                     data += next_data
                     continue
@@ -53,10 +55,10 @@ class Lexer(ILexer):
             value = mtch.group()
             for proc in self.__token_procs[kind]:
                 proc()
-            yield Token(kind, value)
             pos = mtch.end()
-            self.__num_column = pos - start_line
-            if pos >= size_data:
+            self.__num_column = mtch.start() - start_line
+            yield Token(kind, value)
+            if pos >= self.size_read_data:
                 data = data[pos:]
                 endpos -= pos
                 pos = 0
@@ -72,12 +74,22 @@ class Lexer(ILexer):
                                      f" in line {self.__num_line} in column {self.__num_column}!!!")
 
     @property
-    def _num_line(self):
+    def num_line(self):
         return self.__num_line
 
     @property
-    def _num_column(self):
+    def num_column(self):
         return self.__num_column
+
+    @property
+    def size_read_data(self):
+        return self.__size_read_data
+
+    @size_read_data.setter
+    def size_read_data(self, value: int):
+        if value < 1:
+            raise ValueError('Size read data value must be greater 0!!!')
+        self.__size_read_data = value
 
     @property
     def specification(self)-> list:

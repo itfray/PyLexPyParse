@@ -68,11 +68,3 @@ class FileStrReader(IStrReader):
 
     def __del__(self):
         self.close()
-
-
-if __name__ == "__main__":
-    filename = "str_reader/test_str_file.txt"
-
-    reader = FileStrReader(filename=filename, buffering=768)
-    while reader.has_data():
-        print(reader.read(38), end="")

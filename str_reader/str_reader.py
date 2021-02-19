@@ -46,11 +46,3 @@ class StrReader(IStrReader):
         :return: bool
         """
         return self.__pos < len(self.__data)
-
-
-if __name__ == "__main__":
-    data = "Hello\nmy\nworld!!!"
-
-    reader = StrReader(data)
-    while reader.has_data():
-        print(reader.read(4), end="")
