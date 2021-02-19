@@ -19,8 +19,8 @@ token_specification = [
 ]
 
 
-# reader = StrReader(stmt)
-reader = FileStrReader('test_code.txt', buffering=1024)
+reader = StrReader(stmt)
+#reader = FileStrReader('test_code.txt', buffering=1024)
 lexer = Lexer(data_reader=reader, specification=token_specification)
 
 t0 = time.time()
