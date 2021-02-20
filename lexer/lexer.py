@@ -9,7 +9,7 @@ class Lexer(ILexer):
     """
     DEFAULT_SIZE_READ_DATA = 256         # default size one portion of read data
     __data_reader: IStrReader            # reader of string data
-    __specification: tuple                # lexical specification. Example: (('KIND','[Regex]'),...)
+    __specification: tuple               # lexical specification. Example: (('KIND','[Regex]'),...)
     __token_regex: None                  # compiled specification in regex
     __size_read_data: int                # size one portion of read data
     __num_line = 1                       # current processed line
@@ -21,6 +21,10 @@ class Lexer(ILexer):
         self.specification = kwargs.get("specification", ())
 
     def tokens(self):
+        """
+        Peforms search lexemes in string data
+        :return: tokenized parts of data i.e. tokens
+        """
         if self.__data_reader is None:                                # checks data reader
             raise NoneDataReaderError("Data reader is None!!!")
 
