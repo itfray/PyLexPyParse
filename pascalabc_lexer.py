@@ -39,21 +39,22 @@ MULTITOKENS = {
 
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
+    (ID_KIND, r'[_A-Za-zА-Яа-я]{1}[_A-Za-zА-Яа-я\d]*'),
+    ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
+    ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
+    ('STR', r"'[^']*'"),
     (MULTICOMMENT_KIND1, MULTICOMMENT_BOUNDS1.start.regex),
     (MULTICOMMENT_KIND2, MULTICOMMENT_BOUNDS2.start.regex),
     ('LINE_COMMENT', r'//.*'),
-    (ID_KIND, r'(_|\w){1}(_|\w|\d)*'),
-    ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
-    ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
     ('OP_ASN', r':='),
-    ('OP_ARTM', r'[-\*\+/]'),
-    ('DELIM', r'[:;,()\.]'),
+    ('OP_ARTHM', r'[-\*\+/]'),
+    ('DELIM', r'[:;,()\.\[\]]'),
 ]
 
 """
 ID: r'''
-    (_|\w){1}                # first character in identidier
-    (_|\w|\d)*               # remaining characters
+    [_A-Za-zА-Яа-я]{1}       # first character in identidier
+    [_A-Za-zА-Яа-я\d]*       # remaining characters
     ''',
 
 NUM: r'''
@@ -62,6 +63,10 @@ NUM: r'''
       (\.\d+)?               # float part
       ((e|E)(\+|-)?\d+)?     # decimal order
       '''
+
+STR: r"
+      '[^']*'               # string literal
+     "
 """
 
 
@@ -71,6 +76,7 @@ if __name__ == "__main__":
 
     stmt = """
     program test;
+    var a: array of integer[1..10];
     begin
         a := 0;
         if (a) then
@@ -78,8 +84,9 @@ if __name__ == "__main__":
         result := +3.3E+6;
         kek := $C000fd;             (* Установить  значение для kek!!! *)
         result := kek / result;     { Вычислить result!!! }
+        var s: string := '*gwqrwrsgdn';
     end.
-
+    
     {
     
         Многострочный комментарий!!!
@@ -92,6 +99,8 @@ if __name__ == "__main__":
         
     *)
     
+    { Это еще один
+    (* комментарий *)}
     """
     data_reader = StrReader(stmt)
 
