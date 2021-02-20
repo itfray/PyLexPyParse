@@ -1,5 +1,6 @@
 from str_reader.str_reader import StrReader
 from str_reader.file_reader import FileStrReader
+from lexer import UnexceptedLexemeError
 from lexer.prog_lang_lexer import ProgLangLexer, MultiTokenBounds, MultiTokenBound
 from time import time
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         Многострочный комментарий!!!
     
     }
-    
+
     (*
     
         Это тоже многострочный коменнтарий!!!
@@ -100,8 +101,9 @@ if __name__ == "__main__":
                           multitokens=MULTITOKENS,
                           case_sensitive=CASE_SENSITIVE)
     t0 = time()
-    tokens = []
-    for token in lexer.tokens():
-        print(f"{lexer.num_line}:{lexer.num_column}: {token}")
-        tokens += [token]
+    try:
+        for token in lexer.tokens():
+            print(f"{lexer.num_line}:{lexer.num_column}: {token}")
+    except UnexceptedLexemeError as err:
+        print(err)
     print(time() - t0, " sec")

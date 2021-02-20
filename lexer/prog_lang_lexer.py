@@ -1,4 +1,4 @@
-from .lexer import Lexer
+from .lexer import Lexer, UnexceptedLexemeError, NoneDataReaderError
 import re
 from collections import namedtuple
 
@@ -44,9 +44,8 @@ class ProgLangLexer(Lexer):
                 elif token.kind in self.__multitokens:
                     kind = token.kind
                     bounds = self.__multitokens[kind]
-                    if token.value != bounds.start.value and \
-                       bounds.start.value != bounds.end.value:
-                        raise UnknownLexemeError(f"Unexcepted character '{token.value}'" +
+                    if token.value != bounds.start.value:
+                        raise UnexceptedLexemeError(f"Unexcepted character '{token.value}'" +
                                                  f" in line {self.num_line} in column {self.num_column}!!!")
                     yield token
                     self._Lexer__token_regex = self.__multiregexs[kind]
@@ -59,6 +58,8 @@ class ProgLangLexer(Lexer):
                 if not token is None:
                     yield token
         except StopIteration:
+            pass
+        finally:
             self._Lexer__token_regex = total_regex
 
     @property
@@ -82,10 +83,20 @@ class ProgLangLexer(Lexer):
 
     @property
     def multitokens(self)-> dict:
+        """
+        Get multitokens of programming language.
+        Multitoken
+        :return: tuple of multitokens
+        """
         return self.__multitokens.copy()
 
     @multitokens.setter
     def multitokens(self, value: dict)-> None:
+        """
+        Set multitokens of programming language.
+        :param value: tuple of multitokens
+        :return: None
+        """
         if value is None:
             raise ValueError('multitokens can not be None!!!')
         self.__multitokens = value
