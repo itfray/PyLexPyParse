@@ -24,10 +24,9 @@ class ProgLangLexer(Lexer):
             if token.kind == self.skip_kind:
                 continue                                            # skip token
             elif token.kind == self.id_kind:
-                id = token.value
                 if not self.case_sensitive:
-                    id = id.lower()
-                if id in self.keywords:                             # check identifier or keyword
+                    token.value = token.value.lower()
+                if token.value in self.keywords:                             # check identifier or keyword
                     token.kind = self.keyword_kind
             yield token                                             # return token
 

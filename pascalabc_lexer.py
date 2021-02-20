@@ -27,6 +27,8 @@ KEYWORDS = ('and', 'array', 'as', 'begin',
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
     # ('COMMENT', r'({.*}|\(\*.*\*\)|//.*?)'),
+    # ('COMMENT', r'(//.*)'),
+    # ('COMMENT', r'{.*'),
     ('COMMENT', r'(//.*)'),
     (ID_KIND, r'(_|\w){1}(_|\w|\d)*'),
     ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
@@ -65,7 +67,9 @@ if __name__ == "__main__":
         kek := $C000fd;
         result := kek / result;
     end.
-    
+    """
+
+    """
     {
     
         Многострочный комментарий!!!

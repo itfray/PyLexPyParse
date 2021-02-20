@@ -73,7 +73,7 @@ class Lexer(ILexer):
 
         if pos < len(data):
             self.__num_column += 1
-            raise UnknownLexemeError(f"Unknown character '{data[pos]}'" +
+            raise UnknownLexemeError(f"Unexcepted character '{data[pos]}'" +
                                      f" in line {self.__num_line} in column {self.__num_column}!!!")
 
     @property
