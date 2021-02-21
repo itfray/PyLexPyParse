@@ -8,23 +8,24 @@ CASE_SENSITIVE = False
 SKIP_KIND = 'SKIP'
 ID_KIND = 'ID'
 KEYWORD_KIND = 'KEYWORD'
-KEYWORDS = ('and', 'array', 'as', 'begin',
-            'break', 'case', 'class', 'const',
-            'constructor', 'continue', 'destructor', 'div',
-            'do', 'downto', 'else', 'end', 'event', 'except',
-            'extensionmethod', 'file', 'finalization', 'finally',
-            'for', 'foreach', 'forward', 'function', 'goto',
-            'if', 'implementation', 'in', 'inherited', 'initializtion',
-            'interface', 'is', 'label', 'lock', 'loop', 'mod',
-            'nil', 'not', 'of', 'operator', 'or', 'private', 'procedure', 'program',
-            'property', 'protected', 'public', 'record', 'repeat',
+KEYWORDS = ('and', 'array', 'as', 'auto', 'begin',
+            'case', 'class', 'const', 'constructor',
+            'destructor', 'div', 'do', 'downto', 'else',
+            'end', 'event', 'except', 'extensionmethod', 'file',
+            'finalization', 'finally', 'for', 'foreach',
+            'function', 'goto', 'if', 'implementation', 'in',
+            'inherited', 'initializtion', 'interface', 'is', 'label',
+            'lock', 'loop', 'mod', 'nil', 'not', 'of', 'operator',
+            'or', 'procedure', 'program', 'property', 'record', 'repeat',
             'raise', 'sealed', 'set', 'sequence', 'shl', 'shr',
-            'sizeof', 'template', 'then', 'to', 'type', 'typeof',
-            'unit', 'until', 'uses', 'using', 'var', 'while', 'where', 'with',
-            'xor', 'abstract', 'default', 'external', 'internal', 'on',
-            'overload', 'override', 'params', 'read', 'reintroduce',
-            'virtual', 'write',
-            'exit', 'yield', 'try', 'finnaly',)
+            'sizeof', 'template', 'then', 'to', 'try',
+            'type', 'typeof', 'until', 'uses', 'using',
+            'var', 'while', 'where', 'with', 'xor', 'yield',
+            'unit', 'library', 'abstract', 'default', 'external',
+            'forward', 'internal', 'on', 'overload', 'override',
+            'params', 'private', 'protected', 'public',
+            'reintroduce', 'virtual',)
+            #'read', 'write',)
 
 MULTICOMMENT_KIND1 = "MULTI_COMENT1"
 MULTICOMMENT_BOUNDS1 = MultiTokenBounds(MultiTokenBound('{', r'{'),
@@ -39,14 +40,14 @@ MULTITOKENS = {
 
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
-    (ID_KIND, r'[_A-Za-zА-Яа-я][_A-Za-zА-Яа-я\d]*'),
+    (ID_KIND, r'[_A-Za-zА-Яа-я&][_A-Za-zА-Яа-я\d]*'),
     ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
     ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
     ('STR', r"'[^']*'"),
     ('RANGE', r'\.\.'),
     ('PTR', r'[\^@]'),
     ('LAMBDA', r'->'),
-    ('TERNAR', r'\?'),
+    ('COND', r'\?'),
     ('LINE_COMMENT', r'//.*'),
     ('OP_ASN', r'[-\+\*/:]='),
     ('OP_ARTHM', r'(\*\*|[-\*\+/])'),
