@@ -23,7 +23,8 @@ KEYWORDS = ('and', 'array', 'as', 'begin',
             'unit', 'until', 'uses', 'using', 'var', 'while', 'where', 'with',
             'xor', 'abstract', 'default', 'external', 'internal', 'on',
             'overload', 'override', 'params', 'read', 'reintroduce',
-            'virtual', 'write')
+            'virtual', 'write',
+            'exit', 'yield', 'try', 'finnaly',)
 
 MULTICOMMENT_KIND1 = "MULTI_COMENT1"
 MULTICOMMENT_BOUNDS1 = MultiTokenBounds(MultiTokenBound('{', r'{'),
@@ -48,8 +49,9 @@ SPECIFICATION = [
     ('TERNAR', r'\?'),
     ('LINE_COMMENT', r'//.*'),
     ('OP_ASN', r'[-\+\*/:]='),
-    ('OP_ARTHM', r'[-\*\+/]'),
+    ('OP_ARTHM', r'(\*\*|[-\*\+/])'),
     ('OP_COMP', r'(<>|[<>]?=|[<>])'),
+    ('DIRECTIVE', r'{\$.*}'),
     (MULTICOMMENT_KIND1, MULTICOMMENT_BOUNDS1.start.regex),
     (MULTICOMMENT_KIND2, MULTICOMMENT_BOUNDS2.start.regex),
     ('DELIM', r'[:;,()\.\[\]]'),
