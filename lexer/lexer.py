@@ -73,6 +73,7 @@ class Lexer(ILexer):
             if pos >= self.size_read_data:              # remove processed portion of data
                 data = data[pos:]
                 endpos -= pos
+                start_line -= pos
                 pos = 0
 
         if pos < len(data):
