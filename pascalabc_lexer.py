@@ -1,4 +1,3 @@
-from str_reader.str_reader import StrReader
 from str_reader.file_reader import FileStrReader
 from lexer import UnexceptedLexemeError
 from lexer.prog_lang_lexer import ProgLangLexer, MultiTokenBounds, MultiTokenBound
@@ -39,21 +38,26 @@ MULTITOKENS = {
 
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
-    (ID_KIND, r'[_A-Za-zА-Яа-я]{1}[_A-Za-zА-Яа-я\d]*'),
+    (ID_KIND, r'[_A-Za-zА-Яа-я][_A-Za-zА-Яа-я\d]*'),
     ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
     ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
     ('STR', r"'[^']*'"),
+    ('RANGE', r'\.\.'),
+    ('PTR', r'[\^@]'),
+    ('LAMBDA', r'->'),
+    ('TERNAR', r'\?'),
+    ('LINE_COMMENT', r'//.*'),
+    ('OP_ASN', r'[-\+\*/:]='),
+    ('OP_ARTHM', r'[-\*\+/]'),
+    ('OP_COMP', r'(<>|[<>]?=|[<>])'),
     (MULTICOMMENT_KIND1, MULTICOMMENT_BOUNDS1.start.regex),
     (MULTICOMMENT_KIND2, MULTICOMMENT_BOUNDS2.start.regex),
-    ('LINE_COMMENT', r'//.*'),
-    ('OP_ASN', r':='),
-    ('OP_ARTHM', r'[-\*\+/]'),
     ('DELIM', r'[:;,()\.\[\]]'),
 ]
 
 """
 ID: r'''
-    [_A-Za-zА-Яа-я]{1}       # first character in identidier
+    [_A-Za-zА-Яа-я]          # first character in identidier
     [_A-Za-zА-Яа-я\d]*       # remaining characters
     ''',
 
@@ -71,38 +75,8 @@ STR: r"
 
 
 if __name__ == "__main__":
-    # filename = "test_code.txt"
-    # data_reader = FileStrReader(filename, buffering=1024)
-
-    stmt = """
-    program test;
-    var a: array of integer[1..10];
-    begin
-        a := 0;
-        if (a) then
-            _b := -123.0;           // Установить значение для _b!!!
-        result := +3.3E+6;
-        kek := $C000fd;             (* Установить  значение для kek!!! *)
-        result := kek / result;     { Вычислить result!!! }
-        var s: string := '*gwqrwrsgdn';
-    end.
-    
-    {
-    
-        Многострочный комментарий!!!
-    
-    }
-
-    (*
-    
-        Это тоже многострочный коменнтарий!!!
-        
-    *)
-    
-    { Это еще один
-    (* комментарий *)}
-    """
-    data_reader = StrReader(stmt)
+    filename = "pascal_code.pas"
+    data_reader = FileStrReader(filename, buffering=1024, encoding='utf-8-sig')
 
     lexer = ProgLangLexer(data_reader=data_reader, specification=SPECIFICATION,
                           skip_kind=SKIP_KIND, keyword_kind=KEYWORD_KIND,
