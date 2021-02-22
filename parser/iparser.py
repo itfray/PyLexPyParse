@@ -4,34 +4,39 @@ from lexer import ILexer
 
 class Node:
     value = None
-    __nodes: list
+    parent: Node
+    __childs: list
     def __init__(self, **kwargs):
+        self.parent = kwargs.get('parent', None)
         self.value = kwargs.get('value', None)
-        nodes = kwargs.get('nodes', None)
-        self.__nodes = [] if nodes is None else [node for node in nodes]
+        childs = kwargs.get('childs', None)
+        self.__childs = [] if childs is None else [child for child in childs]
 
     @property
-    def nodes(self)-> list:
-        return self.__nodes
+    def childs(self)-> list:
+        return self.__childs
 
 
 class IParser(abc.ABC):
     def parse(self)-> Node:
         """
-        :return:
+        Parses tokens and constructs parse tree
+        :return: root of parse tree
         """
 
     @property
     @abc.abstractmethod
     def lexer(self)-> ILexer:
         """
-        :return:
+        Get lexer
+        :return: lexer
         """
 
     @lexer.setter
     @abc.abstractmethod
     def lexer(self, value: ILexer)-> None:
         """
-        :param value:
-        :return:
+        Set lexer
+        :param value: lexer
+        :return: None
         """
