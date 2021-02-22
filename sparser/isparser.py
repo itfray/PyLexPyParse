@@ -4,7 +4,7 @@ from lexer import ILexer
 
 class Node:
     value = None                        # node value
-    parent: Node                        # parent node
+    parent = None                       # parent node
     __childs: list                      # child nodes
     def __init__(self, **kwargs):
         self.parent = kwargs.get('parent', None)
@@ -21,7 +21,7 @@ class Node:
         return self.__childs
 
 
-class IParser(abc.ABC):
+class ISParser(abc.ABC):
     """
     IParser is interface of syntax analyzer
     """
@@ -50,9 +50,18 @@ class IParser(abc.ABC):
         """
 
 
-class ParserError(Exception):
+class SParserError(Exception):
     """
      ParserError is class of errors for syntax analyzer IParser
     """
     def __init__(self, *args):
         self.args = args
+
+
+class NoneLexerError(SParserError):
+    """
+     NoneLexerError is class of errors for syntax analyzer IParser
+     Raise when sparser's lexer not found (is None).
+    """
+    def __init__(self, *args):
+        super().__init__(*args)

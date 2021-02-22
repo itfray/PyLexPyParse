@@ -72,3 +72,29 @@ STR: r"
       '[^']*'               # string literal
      "
 """
+
+
+if __name__ == "__main__":
+    from str_reader.file_reader import FileStrReader
+    from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexemeError
+    from time import time
+
+    filename = "pascal_code.pas"
+    data_reader = FileStrReader(filename, buffering=1024, encoding='utf-8-sig')
+
+    lexer = ProgLangLexer(data_reader=data_reader,
+                          specification=SPECIFICATION,
+                          skip_kind=SKIP_KIND,
+                          keyword_kind=KEYWORD_KIND,
+                          id_kind=ID_KIND,
+                          keywords=KEYWORDS,
+                          multitokens=MULTITOKENS,
+                          case_sensitive=CASE_SENSITIVE)
+
+    t0 = time()
+    try:
+        for token in lexer.tokens():
+            print(f"{lexer.num_line}:{lexer.num_column}: {token}")
+    except UnexceptedLexemeError as err:
+        print(err)
+    print(time() - t0, " sec")
