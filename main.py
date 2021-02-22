@@ -1,4 +1,4 @@
-from sparser.sparser import SParser
+from sparser.sparser import SParser, Rule, LR0Point, LR1Point
 
 
 RULES = ("""
@@ -17,3 +17,8 @@ RULES = ("""
 parser = SParser()
 parser.rules = RULES
 print(parser.rules)
+
+rule = Rule('E', 'E', '+', 'T')
+print(rule)
+lrpoint = LR1Point(rule=rule, iptr=1, lookahead='⊥')
+print(lrpoint)
