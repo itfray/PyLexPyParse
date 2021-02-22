@@ -20,5 +20,5 @@ print(parser.rules)
 
 rule = Rule('E', 'E', '+', 'T')
 print(rule)
-lrpoint = LR1Point(rule=rule, iptr=1, lookahead='⊥')
+lrpoint = LR1Point(rule=rule, iptr=1, lookahead=['⊥'])
 print(lrpoint)

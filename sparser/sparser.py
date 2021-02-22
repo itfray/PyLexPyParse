@@ -3,39 +3,73 @@ from .isparser import ISParser, Node, NoneLexerError, ILexer
 
 class Rule:
     key: str
-    values: tuple
-    def __init__(self, key, *vals):
+    __value: tuple
+    def __init__(self, key, *value):
         self.key = key
-        self.values = tuple(vals)
+        self.value = value
+
+    @property
+    def value(self)-> tuple:
+        return self.__value
+
+    @value.setter
+    def value(self, val: tuple)-> None:
+        if val is None:
+            raise ValueError("Value must be not is None!!!")
+        self.__value = val
 
     def __str__(self):
-        return self.key + " -> " + " ".join(self.values)
+        return self.key + " -> " + " ".join(self.value)
 
     def __repr__(self):
-        return f"Rules(key='{self.key}', values={self.values})"
+        return f"Rules(key='{self.key}', value={self.value})"
 
 
 class LR0Point:
-    rule: Rule
-    iptr: int
+    __rule: Rule
+    __iptr: int
     def __init__(self, **kwargs):
         self.rule = kwargs.get("rule", None)
         self.iptr = kwargs.get("iptr", -1)
 
-    def __str__(self):
-        ans = self.rule.key + " -> "
-        if self.iptr < 0:
-            ans += " ".join(self.rule.values)
+    @property
+    def rule(self)-> Rule:
+        return self.__rule
+
+    @rule.setter
+    def rule(self, value: Rule)-> None:
+        self.__rule = value
+        self.__iptr = -1
+
+    @property
+    def iptr(self)-> int:
+        return self.__iptr
+
+    @iptr.setter
+    def iptr(self, value: int)-> None:
+        if self.rule is None:
+            self.iptr = -1
+        elif value < -1:
+            self.__iptr = -1
+        elif value > len(self.rule.value):
+            self.__iptr = len(self.rule.value)
         else:
-            self.iptr = self.iptr \
-                if self.iptr <= len(self.rule.values) else len(self.rule.values)
-            for i in range(len(self.rule.values)):
+            self.__iptr = value
+
+    def __str__(self):
+        if self.rule is None:
+            return ""
+        elif self.iptr < 0:
+            return self.rule.__str__()
+        else:
+            ans = self.rule.key + " -> "
+            for i in range(len(self.rule.value)):
                 if i == self.iptr:
                     ans += "●"
-                ans += self.rule.values[i]
-                if i < len(self.rule.values) - 1:
+                ans += self.rule.value[i]
+                if i < len(self.rule.value) - 1:
                     ans += " "
-            if self.iptr == len(self.rule.values):
+            if self.iptr == len(self.rule.value):
                 ans += "●"
         return ans
 
@@ -44,13 +78,29 @@ class LR0Point:
 
 
 class LR1Point(LR0Point):
-    lookahead: str
+    __lookahead: list
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.lookahead = kwargs.get("lookahead", '')
+        self.__lookahead = kwargs.get("lookahead", [])
+
+    @property
+    def lookahead(self)-> list:
+        return self.__lookahead
+
+    @lookahead.setter
+    def lookahead(self, value: list)-> None:
+        if value is None:
+            raise ValueError("Lookahead must be not is None!!!")
+        self.__lookahead = value
 
     def __str__(self):
-        return f"[{super().__str__()}, {self.lookahead}]"
+        ans = "[" + super().__str__() + ", "
+        for i in range(len(self.lookahead)):
+            ans += self.lookahead[i]
+            if i < len(self.lookahead) - 1:
+                ans += '/'
+        ans += "]"
+        return ans
 
     def __repr__(self):
         return f"LR1Point(rule={self.rule}, iptr={self.iptr}, lookahead={self.lookahead})"
