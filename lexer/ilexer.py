@@ -1,5 +1,4 @@
 import abc
-from typing import NamedTuple
 from str_reader import IStrReader
 
 
