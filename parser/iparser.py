@@ -48,3 +48,11 @@ class IParser(abc.ABC):
         :param value: lexer
         :return: None
         """
+
+
+class ParserError(Exception):
+    """
+     ParserError is class of errors for syntax analyzer IParser
+    """
+    def __init__(self, *args):
+        self.args = args
