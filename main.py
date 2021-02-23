@@ -9,11 +9,11 @@ RULES = """
          C -> c C |
               d
         """
-TOKENS = ('ID',)
+TOKENS = ('c', 'd')
 
-# parser = SParser(tokens=TOKENS)
-# parser.parse_rules_from(RULES)
-# print(parser.rules)
+parser = SParser(tokens=TOKENS)
+parser.parse_rules_from(RULES)
+print(parser.rules)
 
 rules = SParser.parse_rules(RULES)
 terminal_func = lambda ch: ch.islower()

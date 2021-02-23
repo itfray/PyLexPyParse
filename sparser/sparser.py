@@ -140,6 +140,19 @@ class LRState:
             raise ValueError("goto must be not is None!!!")
         self.__goto = value
 
+    def __eq__(self, other)-> bool:
+        count_eql = 0
+        if len(self.lrpoints) == len(other.lrpoints):
+            for i in range(len(self.lrpoints)):
+                rule1 = self.lrpoints[i].rule
+                rule2 = other.lrpoints[i].rule
+                if rule1 is rule2:
+                    count_eql += 1
+        return count_eql == len(self.lrpoints)
+
+    def __ne__(self, other)-> bool:
+        return not self == other
+
     def __str__(self):
         ans = "["
         for i in range(len(self.lrpoints)):
@@ -214,6 +227,7 @@ def goto_LR1(rules: list, terminal_func, lrpoints: list, value: str)-> LRState:
 class SParser(ISParser):
     __rules: tuple                                   # rules of grammar
     __tokens: tuple                                  # tokens
+    __lrstates: list
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
         self.rules = kwargs.get("rules", ())
@@ -239,6 +253,34 @@ class SParser(ISParser):
     @lexer.setter
     def lexer(self, value: ILexer)-> None:
         self.__lexer = value
+
+    def __create_lrstates(self):
+        if len(self.__rules) == 0:
+            return
+        lrstates = []
+        queue = []
+        lrpoint = LR1Point(rule=self.__rules[0], iptr=0, lookahead=['⊥'])
+        lrstate = LRState(lrpoints=closure_LR1(self.__rules, self.is_terminal, lrpoint))
+        lrstates.append(lrstate)
+        queue.append(lrstate)
+        while len(queue) > 0:
+            lrstate = queue.pop(0)
+            for lrpoint in lrstate.lrpoints:
+                rule = lrpoint.rule
+                iptr = lrpoint.iptr
+                if iptr < 0 or iptr > len(rule.value) - 1:
+                    continue
+                B = rule.value[iptr]
+                new_lrstate = goto_LR1(self.__rules, self.is_terminal, lrstate.lrpoints, B)
+                if new_lrstate is None:
+                    continue
+                if lrstate != new_lrstate:
+                    lrstate.goto[B] = new_lrstate
+                    lrstates.append(new_lrstate)
+                    queue.append(new_lrstate)
+                else:
+                    lrstate.goto[B] = lrstate
+        self.__lrstates = lrstates
 
     @property
     def tokens(self)-> tuple:
@@ -269,9 +311,11 @@ class SParser(ISParser):
         if value is None:
             raise ValueError("Rules must be not None!!!")
         self.__rules = tuple(rule.__copy__() for rule in value)
+        self.__create_lrstates()
 
     def parse_rules_from(self, specification: str)-> None:
         self.__rules = self.parse_rules(specification)
+        self.__create_lrstates()
 
     @staticmethod
     def parse_rules(specification: str)-> tuple:
