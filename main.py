@@ -1,7 +1,6 @@
-from sparser.sparser import SParser, first_term
+from sparser.sparser import SParser, first_term, closure_LR1, Rule, LR1Point
 
 
-'⊥'
 
 RULES = """
          S' -> S;
@@ -16,4 +15,13 @@ TOKENS = ('ID',)
 # print(parser.rules)
 
 rules = SParser.parse_rules(RULES)
-print(first_term(rules, lambda ch: ch.islower(), "S'"))
+lrpoints = closure_LR1(rules, lambda ch: ch.islower(),
+                      LR1Point(rule=Rule("S'", 'S'),
+                               iptr=0, lookahead=['⊥',]))
+
+# lrpoints = closure_LR1(rules, lambda ch: ch.islower(),
+#                       LR1Point(rule=Rule("S", 'C', 'C'),
+#                                iptr=1, lookahead=['⊥',]))
+
+for lrpoint in lrpoints:
+    print(lrpoint)
