@@ -303,7 +303,7 @@ def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
                 lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
     return lrpoints
 
-def goto_LR1Point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
+def goto_LR1Point(rules: tuple, terminal_func, lrpoints: list, value: str)-> LR1Point:
     """
     Calculate LR-point for GOTO-transition by specified value.
     GOTO_LR1Point([..., [A -> α●Xβ, a], ...], X) = [A -> αX●β, a].
@@ -327,6 +327,50 @@ def goto_LR1Point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1P
         if value == B:
             return LR1Point(rule=rule, iptr=iptr + 1, lookahead=lookahead)
     return None
+
+def create_LR1States(rules: tuple, term_func, lrpoint: LR1Point)-> list:
+    """
+    Create all LR-states of LR state machine by LR-point with goal symbol
+    :param rules: rules of grammar
+    :param term_func: predicate for definition terminal symbols
+    :param lrpoint: LR1-point who need calulate LR-states
+    :return: list of all LR-states of LR state machine
+    """
+    lrpt = lrpoint
+    lrst = LRState()                                      # LR-state I0
+    lrst.lrpoints = closure_LR1(rules, term_func, lrpt)   # calculate CLOSURE(I0)
+    used_lrpoints = []
+    lrstates = []                        # all LR-states
+    queue = []
+    lrstates.append(lrst)                # add I0
+    queue.append((lrpt, lrst))           # add I0 for processing
+    used_lrpoints.append((lrpt, lrst))
+    while len(queue) > 0:
+        curr_lrp, curr_lrst = queue.pop(0)
+        for lrpoint in curr_lrst.lrpoints:
+            rule = lrpoint.rule
+            iptr = lrpoint.iptr
+            if iptr < 0 or iptr > len(rule.value) - 1:      # if after ● there is a symbol
+                continue
+            B = rule.value[iptr]
+            # calculate LR1-point fot GOTO-transition
+            new_lrp = goto_LR1Point(rules, term_func, curr_lrst.lrpoints, B)
+            if new_lrp is None:
+                continue
+            new_lrst = None
+            for lrp, lrst in used_lrpoints:     # find LR-state for GOTO LR-point
+                if lrp == new_lrp:              # if LR-state is already created
+                    new_lrp = lrp
+                    new_lrst = lrst
+                    break
+            if new_lrst is None:                # create new LR-state
+                new_lrst = LRState()
+                new_lrst.lrpoints = closure_LR1(rules, term_func, new_lrp)
+                used_lrpoints.append((new_lrp, new_lrst))
+                queue.append((new_lrp, new_lrst))          # add Ii for processing
+                lrstates.append(new_lrst)                  # add Ii
+            curr_lrst.goto[B] = new_lrst                   # set transition
+    return lrstates
 
 
 class SParser(ISParser):
@@ -374,41 +418,14 @@ class SParser(ISParser):
         self.__lexer = value
 
     def __create_lrstates(self):
+        """
+        Create all LR-states of LR state machine
+        :return:
+        """
         if len(self.__rules) == 0:
             return
         lrpt = LR1Point(rule=self.__rules[0], iptr=0, lookahead=['⊥'])
-        lrst = LRState(lrpoints=closure_LR1(self.__rules, self.is_terminal, lrpt))
-        used_lrpoints = []
-        lrstates = []
-        queue = []
-        lrstates.append(lrst)
-        queue.append((lrpt, lrst))
-        used_lrpoints.append((lrpt, lrst))
-        while len(queue) > 0:
-            curr_lrp, curr_lrst = queue.pop(0)
-            for lrpoint in curr_lrst.lrpoints:
-                rule = lrpoint.rule
-                iptr = lrpoint.iptr
-                if iptr < 0 or iptr > len(rule.value) - 1:
-                    continue
-                B = rule.value[iptr]
-                new_lrp = goto_LR1Point(self.__rules, self.is_terminal, curr_lrst.lrpoints, B)
-                if new_lrp is None:
-                    continue
-                new_lrst = None
-                for lrp, lrst in used_lrpoints:
-                    if lrp == new_lrp:
-                        new_lrp = lrp
-                        new_lrst = lrst
-                        break
-                if new_lrst is None:
-                    new_lrst = LRState()
-                    new_lrst.lrpoints = closure_LR1(self.__rules, self.is_terminal, new_lrp)
-                    used_lrpoints.append((new_lrp, new_lrst))
-                    queue.append((new_lrp, new_lrst))
-                    lrstates.append(new_lrst)
-                curr_lrst.goto[B] = new_lrst
-        self.__lrstates = lrstates
+        self.__lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)
 
     @property
     def tokens(self)-> tuple:
