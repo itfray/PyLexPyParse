@@ -140,6 +140,20 @@ class LRState:
             raise ValueError("goto must be not is None!!!")
         self.__goto = value
 
+    def __str__(self):
+        ans = "["
+        for i in range(len(self.lrpoints)):
+            ans += str(self.lrpoints[i])
+            if i < len(self.lrpoints) - 1:
+                ans += ", "
+        ans += "]"
+        if len(self.goto) > 0:
+            ans += "\n{ "
+            for key in self.goto:
+                ans += key + "; "
+            ans += "}"
+        return ans
+
 def first_term(rules: tuple, terminal_func, value: str)-> list:
     vals = []
     queue = []
@@ -165,7 +179,7 @@ def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
         lrpoint = queue.pop(0)
         iptr = lrpoint.iptr
         rule = lrpoint.rule
-        if iptr == -1 or iptr == len(rule.value):
+        if iptr < 0 or iptr > len(rule.value) - 1:
             continue
         B = rule.value[iptr]
         b = rule.value[iptr + 1] if iptr < len(rule.value) - 1 else ''
@@ -180,8 +194,21 @@ def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
     return lrpoints
 
 
-def goto_LR1(rules: list, lrstate: LRState, value: str)-> LRState:
-    pass
+def goto_LR1(rules: list, terminal_func, lrpoints: list, value: str)-> LRState:
+    new_lrstate = None
+    for lrpoint in lrpoints:
+        iptr = lrpoint.iptr
+        rule = lrpoint.rule
+        lookahead = lrpoint.lookahead
+        if iptr < 0 or iptr > len(rule.value) - 1:
+            continue
+        B = rule.value[iptr]
+        if value == B:
+            new_lrstate = LRState()
+            lrp = LR1Point(rule=rule, iptr=iptr + 1, lookahead=lookahead)
+            new_lrstate.lrpoints = closure_LR1(rules, terminal_func, lrp)
+            break
+    return new_lrstate
 
 
 class SParser(ISParser):

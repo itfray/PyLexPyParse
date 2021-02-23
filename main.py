@@ -1,4 +1,5 @@
-from sparser.sparser import SParser, first_term, closure_LR1, Rule, LR1Point
+from sparser.sparser import SParser, first_term, closure_LR1, goto_LR1,\
+                            Rule, LR1Point, LRState
 
 
 
@@ -15,13 +16,13 @@ TOKENS = ('ID',)
 # print(parser.rules)
 
 rules = SParser.parse_rules(RULES)
-lrpoints = closure_LR1(rules, lambda ch: ch.islower(),
-                      LR1Point(rule=Rule("S'", 'S'),
-                               iptr=0, lookahead=['⊥',]))
+terminal_func = lambda ch: ch.islower()
+lrstate = LRState()
+lrstate.lrpoints = closure_LR1(rules, terminal_func,
+                               LR1Point(rule=Rule("S'", 'S'),
+                                        iptr=0, lookahead=['⊥',]))
+print(lrstate)
+print()
 
-# lrpoints = closure_LR1(rules, lambda ch: ch.islower(),
-#                       LR1Point(rule=Rule("S", 'C', 'C'),
-#                                iptr=1, lookahead=['⊥',]))
-
-for lrpoint in lrpoints:
-    print(lrpoint)
+new_lrstate = goto_LR1(rules, terminal_func, lrstate.lrpoints, "d")
+print(new_lrstate)
