@@ -1,4 +1,4 @@
-from sparser.sparser import SParser, first_term, closure_LR1, goto_LR1point,\
+from sparser.sparser import SParser, first_term, closure_LR1, goto_LR1Point,\
                             Rule, LR1Point, LRState
 
 

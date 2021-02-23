@@ -2,18 +2,30 @@ from .isparser import ISParser, Node, NoneLexerError, ILexer
 
 
 class Rule:
-    key: str
-    __value: tuple
+    """
+    Rule is rule of grammar of language
+    """
+    key: str                             # key of rule, string
+    __value: tuple                       # value of rule, set of strings
     def __init__(self, key, *value):
         self.key = key
         self.value = value
 
     @property
     def value(self)-> tuple:
+        """
+        Get value
+        :return: value, tuple of strings
+        """
         return self.__value
 
     @value.setter
     def value(self, val: tuple)-> None:
+        """
+        Set value
+        :param val: value, tuple of strings
+        :return: None
+        """
         if val is None:
             raise ValueError("Value must be not is None!!!")
         self.__value = val
@@ -35,30 +47,54 @@ class Rule:
 
 
 class LR0Point:
-    __rule: Rule
-    __iptr: int
+    """
+    LR0Point is LR0-point of grammar of language
+    """
+    __rule: Rule                           # rule of grammar
+    __iptr: int                            # position of pointer ● in value of rule
     def __init__(self, **kwargs):
         self.rule = kwargs.get("rule", None)
         self.iptr = kwargs.get("iptr", -1)
 
     @property
     def rule(self)-> Rule:
+        """
+        Get rule
+        :return: rule of grammar
+        """
         return self.__rule
 
     @rule.setter
     def rule(self, value: Rule)-> None:
+        """
+        Set rule
+        :param value: rule of grammar
+        :return: None
+        """
         self.__rule = value
-        self.__iptr = -1
+        self.__iptr = -1                   # reset pointer
 
     @property
     def iptr(self)-> int:
+        """
+        Get position of pointer ● in value of rule.
+        :return:
+            -1 - reseted pointer
+            0..n-1 - position in value of rule
+            n - in end of rule
+        """
         if not self.rule is None and \
-           self.__iptr > len(self.rule.value):
+           self.__iptr > len(self.rule.value):      # fix value of iptr
             self.__iptr = len(self.rule.value)
         return self.__iptr
 
     @iptr.setter
     def iptr(self, value: int)-> None:
+        """
+        Set position of pointer ● in value of rule.
+        :param value: int position
+        :return: None
+        """
         if self.rule is None:
             self.iptr = -1
         elif value < -1:
@@ -96,17 +132,29 @@ class LR0Point:
 
 
 class LR1Point(LR0Point):
-    __lookahead: list
+    """
+    LR1Point is LR1-point of grammar of language
+    """
+    __lookahead: list                   # terminal symbols of lookahead
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.__lookahead = kwargs.get("lookahead", [])
 
     @property
     def lookahead(self)-> list:
+        """
+        Get list of terminal symbols of lookahead
+        :return: list of strings
+        """
         return self.__lookahead
 
     @lookahead.setter
     def lookahead(self, value: list)-> None:
+        """
+        Set list of terminal symbols of lookahead
+        :param value: list of strings
+        :return: None
+        """
         if value is None:
             raise ValueError("Lookahead must be not is None!!!")
         self.__lookahead = value
@@ -131,8 +179,11 @@ class LR1Point(LR0Point):
 
 
 class LRState:
-    __lrpoints: list
-    __goto: dict
+    """
+    LRState is state of LR state machine
+    """
+    __lrpoints: list                        # LR-points of LR-state
+    __goto: dict                            # transitions in other states
 
     def __init__(self, **kwargs):
         self.lrpoints = kwargs.get('lrpoints', [])
@@ -140,20 +191,40 @@ class LRState:
 
     @property
     def lrpoints(self)-> list:
+        """
+        Get LR-points
+        :return: list of LR-points
+        """
         return self.__lrpoints
 
     @lrpoints.setter
     def lrpoints(self, value: list)-> None:
+        """
+        Set LR-points
+        :param value: list of LR-points
+        :return: None
+        """
         if value is None:
             raise ValueError("lrpoints must be not is None!!!")
         self.__lrpoints = value
 
     @property
     def goto(self)-> dict:
+        """
+        Get transitions in other states.
+        key - symbol for transition
+        value - new state
+        :return: dictionary of transitions
+        """
         return self.__goto
 
     @goto.setter
     def goto(self, value: dict)-> None:
+        """
+        Set transitions in other states.
+        :param value: dictionary of transitions
+        :return: None
+        """
         if value is None:
             raise ValueError("goto must be not is None!!!")
         self.__goto = value
@@ -174,45 +245,79 @@ class LRState:
 
 
 def first_term(rules: tuple, terminal_func, value: str)-> list:
-    vals = []
+    """
+    Calculate set of FIRST(value) for specified value.
+    FIRST(A) - the set of terminal characters that begin
+    strings derived from 'A'
+    :param rules: rules of grammar
+    :param terminal_func: predicate for definition terminal symbols
+    :param value: symbol who need calulate set of FIRST(...)
+    :return: list of terminal symbols
+    """
+    ans = []                    # list of found terminal symbols
     queue = []
     queue.append(value)
-    while len(queue) > 0:
+    while len(queue) > 0:       # breadth-first search (BFS)
         val = queue.pop(0)
         if terminal_func(val):
-            vals.append(val)
+            ans.append(val)     # add terminal
         else:
             for rule in rules:
                 if rule.key == val:
                     if len(rule.value) > 0:
-                        queue.append(rule.value[0])
-    return vals
+                        queue.append(rule.value[0])   # add new symbol for check
+    return ans
 
 def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
-    lrpoints = []
+    """
+    Calculate set of CLOSURE(...) for specified LR-point.
+    CLOSURE(I) - closing LR-points.
+    if [A -> α●Bβ, a] is included in CLOSURE(I)
+    and there is rule [B -> γ], then in CLOSURE(I)
+    append [B -> ●γ, b] for each terminal b ∈ FIRST(βa).
+    :param rules: rules of grammar
+    :param terminal_func: predicate for definition terminal symbols
+    :param lrpoint: LR-point who need calulate set of CLOSURE(...)
+    :return: list of LR-points for LR-state
+    """
+    lrpoints = []                   # CLOSURE(...), list of LR-points
     queue = []
     lrpoints.append(lrpoint)
     queue.append(lrpoint)
-    while len(queue) > 0:
+    while len(queue) > 0:           # breadth-first search (BFS)
         lrpoint = queue.pop(0)
         iptr = lrpoint.iptr
         rule = lrpoint.rule
         if iptr < 0 or iptr > len(rule.value) - 1:
             continue
-        B = rule.value[iptr]
-        b = rule.value[iptr + 1] if iptr < len(rule.value) - 1 else ''
-        firstb = first_term(rules, terminal_func, b)
+        B = rule.value[iptr]                          # calculate B
+        b = rule.value[iptr + 1] \
+            if iptr < len(rule.value) - 1 else ''     # calculate β
+        firstb = first_term(rules, terminal_func, b)  # calculate FIRST(β)
         if len(firstb) == 0:
-            firstb += lrpoint.lookahead
+            firstb += lrpoint.lookahead               # calculate FIRST(a)
         for rule in rules:
             if B == rule.key:
-                lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)
+                lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)   # add rule [B -> ●γ, FIRST(βa)]
                 queue.append(lrp)
-                lrpoints.append(lrp)
+                lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
     return lrpoints
 
-def goto_LR1point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
-    for lrpoint in lrpoints:
+def goto_LR1Point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
+    """
+    Calculate LR-point for GOTO-transition by specified value.
+    GOTO_LR1Point([..., [A -> α●Xβ, a], ...], X) = [A -> αX●β, a].
+    GOTO(I, X) - set of transitions, I - LR-state,
+    X - symbol for transition.
+    if [A -> α●Xβ, a] in CLOSURE(Ii) then
+    GOTO(Ii, X) = CLOSURE([A -> αX●β, a]).
+    :param rules: rules of grammar
+    :param terminal_func: predicate for definition terminal symbols
+    :param lrpoints: list of LR1-points
+    :param value: symbol for transition
+    :return: LR1-point
+    """
+    for lrpoint in lrpoints:                # check all LR-points
         iptr = lrpoint.iptr
         rule = lrpoint.rule
         lookahead = lrpoint.lookahead
@@ -227,7 +332,7 @@ def goto_LR1point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1P
 class SParser(ISParser):
     __rules: tuple                                   # rules of grammar
     __tokens: tuple                                  # tokens
-    __lrstates: list
+    __lrstates: list                                 # LR-states of LR state machine
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
         self.rules = kwargs.get("rules", ())
@@ -238,6 +343,11 @@ class SParser(ISParser):
             raise NoneLexerError("Lexer is None!!!")
 
     def is_terminal(self, value: str)-> bool:
+        """
+        Predicate for definition terminal symbols of grammar
+        :param value: symbol for check
+        :return: result of check
+        """
         if value in self.__tokens:
             return True
         elif len(value) > 0 and value[0] == "'" \
@@ -248,10 +358,19 @@ class SParser(ISParser):
 
     @property
     def lexer(self)-> ILexer:
+        """
+        Get lexer
+        :return: lexer
+        """
         return self.__lexer
 
     @lexer.setter
     def lexer(self, value: ILexer)-> None:
+        """
+        Set lexer
+        :param value: lexer
+        :return: None
+        """
         self.__lexer = value
 
     def __create_lrstates(self):
@@ -273,7 +392,7 @@ class SParser(ISParser):
                 if iptr < 0 or iptr > len(rule.value) - 1:
                     continue
                 B = rule.value[iptr]
-                new_lrp = goto_LR1point(self.__rules, self.is_terminal, curr_lrst.lrpoints, B)
+                new_lrp = goto_LR1Point(self.__rules, self.is_terminal, curr_lrst.lrpoints, B)
                 if new_lrp is None:
                     continue
                 new_lrst = None
@@ -293,10 +412,19 @@ class SParser(ISParser):
 
     @property
     def tokens(self)-> tuple:
+        """
+        Get lexemes of language
+        :return:
+        """
         return self.__tokens
 
     @tokens.setter
     def tokens(self, value: tuple)-> None:
+        """
+        Set lexemes of language
+        :param value: list of lexemes
+        :return: None
+        """
         if value is None:
             raise ValueError("Rules must be not None!!!")
         self.__tokens = value
