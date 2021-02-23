@@ -244,7 +244,7 @@ class LRState:
         return ans
 
 
-def first_term(rules: tuple, terminal_func, value: str)-> list:
+def first_term(rules: list, terminal_func, value: str)-> list:
     """
     Calculate set of FIRST(value) for specified value.
     FIRST(A) - the set of terminal characters that begin
@@ -268,7 +268,7 @@ def first_term(rules: tuple, terminal_func, value: str)-> list:
                         queue.append(rule.value[0])   # add new symbol for check
     return ans
 
-def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
+def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
     """
     Calculate set of CLOSURE(...) for specified LR-point.
     CLOSURE(I) - closing LR-points.
@@ -303,7 +303,7 @@ def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
                 lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
     return lrpoints
 
-def goto_LR1Point(rules: tuple, terminal_func, lrpoints: list, value: str)-> LR1Point:
+def goto_LR1Point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
     """
     Calculate LR-point for GOTO-transition by specified value.
     GOTO_LR1Point([..., [A -> α●Xβ, a], ...], X) = [A -> αX●β, a].
@@ -328,7 +328,7 @@ def goto_LR1Point(rules: tuple, terminal_func, lrpoints: list, value: str)-> LR1
             return LR1Point(rule=rule, iptr=iptr + 1, lookahead=lookahead)
     return None
 
-def create_LR1States(rules: tuple, term_func, lrpoint: LR1Point)-> list:
+def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
     """
     Create all LR-states of LR state machine by LR-point with goal symbol
     :param rules: rules of grammar
@@ -374,13 +374,19 @@ def create_LR1States(rules: tuple, term_func, lrpoint: LR1Point)-> list:
 
 
 class SParser(ISParser):
-    __rules: tuple                                   # rules of grammar
+    DEFAULT_GOAL_NTERM = ''
+    DEFAULT_END_TERM = '⊥'
+    __rules: list                                    # rules of grammar
     __tokens: tuple                                  # tokens
+    goal_nterm: str
+    end_term: str
     __lrstates: list                                 # LR-states of LR state machine
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
-        self.rules = kwargs.get("rules", ())
+        self.rules = kwargs.get("rules", [])
         self.tokens = kwargs.get("tokens", ())
+        self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
+        self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
 
     def parse(self) -> Node:
         if lexer is None:
@@ -396,6 +402,8 @@ class SParser(ISParser):
             return True
         elif len(value) > 0 and value[0] == "'" \
              and value[len(value) - 1] == "'":
+            return True
+        elif value == self.end_term:
             return True
         else:
             return False
@@ -417,14 +425,24 @@ class SParser(ISParser):
         """
         self.__lexer = value
 
-    def __create_lrstates(self):
+    def create_lrstates(self)-> None:
         """
         Create all LR-states of LR state machine
-        :return:
+        :return: None
         """
-        if len(self.__rules) == 0:
-            return
-        lrpt = LR1Point(rule=self.__rules[0], iptr=0, lookahead=['⊥'])
+        rule = None
+        for r in self.__rules:
+            if r.key == self.goal_nterm:
+                rule = r
+                break
+        if rule is None:
+            if len(self.__rules) > 0:
+                rule = self.__rules[0]
+            else:
+                return
+        goal_rule = Rule(rule.key + "'", rule.key)
+        self.__rules = [goal_rule] + self.__rules
+        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])
         self.__lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)
 
     @property
@@ -447,13 +465,13 @@ class SParser(ISParser):
         self.__tokens = value
 
     @property
-    def rules(self)-> tuple:
+    def rules(self)-> list:
         """
         Get rules of grammar as
-        (Rule(key='...', value=(val1, val2, ...)), ...)
+        [Rule(key='...', value=(val1, val2, ...)), ...]
         :return:
         """
-        return tuple(rule.__copy__() for rule in self.__rules)
+        return self.__rules
 
     @rules.setter
     def rules(self, value: tuple)-> None:
@@ -464,15 +482,13 @@ class SParser(ISParser):
         """
         if value is None:
             raise ValueError("Rules must be not None!!!")
-        self.__rules = tuple(rule.__copy__() for rule in value)
-        self.__create_lrstates()
+        self.__rules = value
 
     def parse_rules_from(self, specification: str)-> None:
         self.__rules = self.parse_rules(specification)
-        self.__create_lrstates()
 
     @staticmethod
-    def parse_rules(specification: str)-> tuple:
+    def parse_rules(specification: str)-> list:
         """
         Parses and sets rules of grammar.
         from:   key1 -> val1 val2 ... |
@@ -493,4 +509,4 @@ class SParser(ISParser):
             for value in values:
                 rule = Rule(key, *[val for val in value.strip().split(' ')])
                 rules.append(rule)
-        return tuple(rules)
+        return rules
