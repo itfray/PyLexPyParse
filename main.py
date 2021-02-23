@@ -1,4 +1,4 @@
-from sparser.sparser import SParser
+from sparser.sparser import SParser, CellSParseTab, SParseTab
 
 
 GOAL_NTERM = 'S'
@@ -12,5 +12,5 @@ TOKENS = ('c', 'd')
 
 parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
 parser.parse_rules_from(RULES)
-parser.create_lrstates()
+parser.create_sparse_tab()
 print(parser.rules)

@@ -182,12 +182,14 @@ class LRState:
     """
     LRState is state of LR state machine
     """
+    index: int                              # index of LR-state
     __lrpoints: list                        # LR-points of LR-state
     __goto: dict                            # transitions in other states
 
     def __init__(self, **kwargs):
         self.lrpoints = kwargs.get('lrpoints', [])
         self.goto = kwargs.get('goto', {})
+        self.index = kwargs.get('index', 0)
 
     @property
     def lrpoints(self)-> list:
@@ -303,7 +305,7 @@ def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
                 lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
     return lrpoints
 
-def goto_LR1Point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
+def goto_LR1Point(lrpoints: list, value: str)-> LR1Point:
     """
     Calculate LR-point for GOTO-transition by specified value.
     GOTO_LR1Point([..., [A -> α●Xβ, a], ...], X) = [A -> αX●β, a].
@@ -336,8 +338,9 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
     :param lrpoint: LR1-point who need calulate LR-states
     :return: list of all LR-states of LR state machine
     """
+    index = 0
     lrpt = lrpoint
-    lrst = LRState()                                      # LR-state I0
+    lrst = LRState(index=index)                           # LR-state I0
     lrst.lrpoints = closure_LR1(rules, term_func, lrpt)   # calculate CLOSURE(I0)
     used_lrpoints = []
     lrstates = []                        # all LR-states
@@ -353,8 +356,7 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
             if iptr < 0 or iptr > len(rule.value) - 1:      # if after ● there is a symbol
                 continue
             B = rule.value[iptr]
-            # calculate LR1-point fot GOTO-transition
-            new_lrp = goto_LR1Point(rules, term_func, curr_lrst.lrpoints, B)
+            new_lrp = goto_LR1Point(curr_lrst.lrpoints, B)  # get LR1-point fot GOTO-transition
             if new_lrp is None:
                 continue
             new_lrst = None
@@ -364,13 +366,85 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
                     new_lrst = lrst
                     break
             if new_lrst is None:                # create new LR-state
-                new_lrst = LRState()
+                index += 1
+                new_lrst = LRState(index=index)
                 new_lrst.lrpoints = closure_LR1(rules, term_func, new_lrp)
                 used_lrpoints.append((new_lrp, new_lrst))
                 queue.append((new_lrp, new_lrst))          # add Ii for processing
                 lrstates.append(new_lrst)                  # add Ii
             curr_lrst.goto[B] = new_lrst                   # set transition
     return lrstates
+
+
+class CellSParseTab:
+    # empty, accept, rule, shift
+    EMP, ACC, RUL, SHF = range(0, 4)
+    action: int
+    value: int
+    def __init__(self, **kwargs):
+        self.action = kwargs.get("action", self.EMP)
+        self.value = kwargs.get("value", 0)
+
+    def __str__(self):
+        if self.action == self.ACC:
+            ans = 'acc'
+        elif self.action == self.RUL:
+            ans = 'r'
+        elif self.action == self.SHF:
+            ans = 's'
+        else:
+            ans = ''
+        if self.value != 0:
+            ans += str(self.value)
+        return ans
+
+    def __repr__(self):
+        return f"CellSParseTab(action={self.action}, value={self.value})"
+
+
+class SParseTab:
+    __headers: dict
+    __content: list
+    def __init__(self, **kwargs):
+        self.__headers = dict()
+        self.__content = []
+        self.headers = kwargs.get('headers', ())
+        self.create(kwargs.get('rows', 0))
+
+    def create(self, rows: int)-> None:
+        self.clear()
+        for i in range(rows):
+            self.__content.append([CellSParseTab() for i in range(len(self.__headers))])
+
+    def clear(self)-> None:
+        self.__content.clear()
+
+    def cell_ind(self, irow: int, icol: int)-> CellSParseTab:
+        return self.__content[irow][icol]
+
+    def cell_hdr(self, irow: int, ncol: str)-> CellSParseTab:
+        return self.__content[irow][self.__headers[ncol]]
+
+    @property
+    def headers(self)-> tuple:
+        return tuple(hdr for hdr in self.__headers)
+
+    @property
+    def rows(self)-> int:
+        return len(self.__content)
+
+    @property
+    def columns(self)-> int:
+        if len(self.__content) > 0:
+            return len(self.__content[0])
+        else:
+            return 0
+
+    @headers.setter
+    def headers(self, value: tuple)-> None:
+        self.__headers.clear()
+        for i in range(len(value)):
+            self.__headers[value[i]] = i
 
 
 class SParser(ISParser):
@@ -381,12 +455,14 @@ class SParser(ISParser):
     goal_nterm: str
     end_term: str
     __lrstates: list                                 # LR-states of LR state machine
+    sparse_tab: SParseTab
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
         self.rules = kwargs.get("rules", [])
         self.tokens = kwargs.get("tokens", ())
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
+        self.sparse_tab = kwargs.get('sparse_tab', None)
 
     def parse(self) -> Node:
         if lexer is None:
@@ -408,23 +484,6 @@ class SParser(ISParser):
         else:
             return False
 
-    @property
-    def lexer(self)-> ILexer:
-        """
-        Get lexer
-        :return: lexer
-        """
-        return self.__lexer
-
-    @lexer.setter
-    def lexer(self, value: ILexer)-> None:
-        """
-        Set lexer
-        :param value: lexer
-        :return: None
-        """
-        self.__lexer = value
-
     def create_lrstates(self)-> None:
         """
         Create all LR-states of LR state machine
@@ -444,6 +503,54 @@ class SParser(ISParser):
         self.__rules = [goal_rule] + self.__rules
         lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])
         self.__lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)
+
+    def create_sparse_tab(self)-> None:
+        self.create_lrstates()
+        all_symbols = [self.end_term]
+        for lrst in self.__lrstates:
+            for key in lrst.goto:
+                if key not in all_symbols:
+                    all_symbols.append(key)
+        self.sparse_tab = SParseTab(headers=all_symbols,
+                                    rows=len(self.__lrstates))
+        for i in range(len(self.__lrstates)):
+            for lrpoint in self.__lrstates[i].lrpoints:
+                if lrpoint.iptr == len(lrpoint.rule.value):
+                    if lrpoint.rule.key == self.goal_nterm:
+                        cell = self.sparse_tab.cell_hdr(i, lrpoint.lookahead[0])
+                        cell.action = cell.ACC
+                    else:
+                        ind = self.__rules.index(lrpoint.rule)
+                        for s in lrpoint.lookahead:
+                            cell = self.sparse_tab.cell_hdr(i, s)
+                            cell.action = cell.RUL
+                            cell.value = ind
+                    break
+            for s in self.__lrstates[i].goto:
+                cell = self.sparse_tab.cell_hdr(i, s)
+                new_lrst = self.__lrstates[i].goto[s]
+                if self.is_terminal(s):
+                    cell.action = cell.SHF
+                cell.value = new_lrst.index
+
+
+
+    @property
+    def lexer(self)-> ILexer:
+        """
+        Get lexer
+        :return: lexer
+        """
+        return self.__lexer
+
+    @lexer.setter
+    def lexer(self, value: ILexer)-> None:
+        """
+        Set lexer
+        :param value: lexer
+        :return: None
+        """
+        self.__lexer = value
 
     @property
     def tokens(self)-> tuple:
