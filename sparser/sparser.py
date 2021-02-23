@@ -143,7 +143,7 @@ class LRState:
 def first_term(rules: tuple, terminal_func, value: str)-> list:
     vals = []
     queue = []
-    queue.add(value)
+    queue.append(value)
     while len(queue) > 0:
         val = queue.pop(0)
         if terminal_func(val):
@@ -156,7 +156,7 @@ def first_term(rules: tuple, terminal_func, value: str)-> list:
     return vals
 
 
-def closure_LR1(terminals: list, rules: tuple, lrpoint: LR1Point)-> list:
+def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
     lrpoints = []
     queue = []
     lrpoints.append(lrpoint)
@@ -169,7 +169,15 @@ def closure_LR1(terminals: list, rules: tuple, lrpoint: LR1Point)-> list:
             continue
         B = rule.value[iptr]
         b = rule.value[iptr + 1] if iptr < len(rule.value) - 1 else ''
-
+        firstb = first_term(rules, terminal_func, b)
+        if len(firstb) == 0:
+            firstb += lrpoint.lookahead
+        for rule in rules:
+            if B == rule.key:
+                lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)
+                queue.append(lrp)
+                lrpoints.append(lrp)
+    return lrpoints
 
 
 def goto_LR1(rules: list, lrstate: LRState, value: str)-> LRState:
