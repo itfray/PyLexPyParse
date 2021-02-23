@@ -18,6 +18,12 @@ class Rule:
             raise ValueError("Value must be not is None!!!")
         self.__value = val
 
+    def __eq__(self, other):
+        return self.key == other.key and self.value == other.value
+
+    def __ne__(self, other):
+        return not self == other
+
     def __copy__(self):
         return Rule(self.key, *self.value)
 
@@ -61,6 +67,12 @@ class LR0Point:
             self.__iptr = len(self.rule.value)
         else:
             self.__iptr = value
+
+    def __eq__(self, other):
+        return self.rule == other.rule and self.iptr == other.iptr
+
+    def __ne__(self, other):
+        return not self == other
 
     def __str__(self):
         if self.rule is None:
@@ -108,6 +120,12 @@ class LR1Point(LR0Point):
         ans += "]"
         return ans
 
+    def __eq__(self, other):
+        return super().__eq__(other) and self.lookahead == other.lookahead
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return f"LR1Point(rule={self.rule}, iptr={self.iptr}, lookahead={self.lookahead})"
 
@@ -140,19 +158,6 @@ class LRState:
             raise ValueError("goto must be not is None!!!")
         self.__goto = value
 
-    def __eq__(self, other)-> bool:
-        count_eql = 0
-        if len(self.lrpoints) == len(other.lrpoints):
-            for i in range(len(self.lrpoints)):
-                rule1 = self.lrpoints[i].rule
-                rule2 = other.lrpoints[i].rule
-                if rule1 is rule2:
-                    count_eql += 1
-        return count_eql == len(self.lrpoints)
-
-    def __ne__(self, other)-> bool:
-        return not self == other
-
     def __str__(self):
         ans = "["
         for i in range(len(self.lrpoints)):
@@ -166,6 +171,7 @@ class LRState:
                 ans += key + "; "
             ans += "}"
         return ans
+
 
 def first_term(rules: tuple, terminal_func, value: str)-> list:
     vals = []
@@ -181,7 +187,6 @@ def first_term(rules: tuple, terminal_func, value: str)-> list:
                     if len(rule.value) > 0:
                         queue.append(rule.value[0])
     return vals
-
 
 def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
     lrpoints = []
@@ -206,9 +211,7 @@ def closure_LR1(rules: tuple, terminal_func, lrpoint: LR1Point)-> list:
                 lrpoints.append(lrp)
     return lrpoints
 
-
-def goto_LR1(rules: list, terminal_func, lrpoints: list, value: str)-> LRState:
-    new_lrstate = None
+def goto_LR1point(rules: list, terminal_func, lrpoints: list, value: str)-> LR1Point:
     for lrpoint in lrpoints:
         iptr = lrpoint.iptr
         rule = lrpoint.rule
@@ -217,11 +220,8 @@ def goto_LR1(rules: list, terminal_func, lrpoints: list, value: str)-> LRState:
             continue
         B = rule.value[iptr]
         if value == B:
-            new_lrstate = LRState()
-            lrp = LR1Point(rule=rule, iptr=iptr + 1, lookahead=lookahead)
-            new_lrstate.lrpoints = closure_LR1(rules, terminal_func, lrp)
-            break
-    return new_lrstate
+            return LR1Point(rule=rule, iptr=iptr + 1, lookahead=lookahead)
+    return None
 
 
 class SParser(ISParser):
@@ -257,29 +257,38 @@ class SParser(ISParser):
     def __create_lrstates(self):
         if len(self.__rules) == 0:
             return
+        lrpt = LR1Point(rule=self.__rules[0], iptr=0, lookahead=['⊥'])
+        lrst = LRState(lrpoints=closure_LR1(self.__rules, self.is_terminal, lrpt))
+        used_lrpoints = []
         lrstates = []
         queue = []
-        lrpoint = LR1Point(rule=self.__rules[0], iptr=0, lookahead=['⊥'])
-        lrstate = LRState(lrpoints=closure_LR1(self.__rules, self.is_terminal, lrpoint))
-        lrstates.append(lrstate)
-        queue.append(lrstate)
+        lrstates.append(lrst)
+        queue.append((lrpt, lrst))
+        used_lrpoints.append((lrpt, lrst))
         while len(queue) > 0:
-            lrstate = queue.pop(0)
-            for lrpoint in lrstate.lrpoints:
+            curr_lrp, curr_lrst = queue.pop(0)
+            for lrpoint in curr_lrst.lrpoints:
                 rule = lrpoint.rule
                 iptr = lrpoint.iptr
                 if iptr < 0 or iptr > len(rule.value) - 1:
                     continue
                 B = rule.value[iptr]
-                new_lrstate = goto_LR1(self.__rules, self.is_terminal, lrstate.lrpoints, B)
-                if new_lrstate is None:
+                new_lrp = goto_LR1point(self.__rules, self.is_terminal, curr_lrst.lrpoints, B)
+                if new_lrp is None:
                     continue
-                if lrstate != new_lrstate:
-                    lrstate.goto[B] = new_lrstate
-                    lrstates.append(new_lrstate)
-                    queue.append(new_lrstate)
-                else:
-                    lrstate.goto[B] = lrstate
+                new_lrst = None
+                for lrp, lrst in used_lrpoints:
+                    if lrp == new_lrp:
+                        new_lrp = lrp
+                        new_lrst = lrst
+                        break
+                if new_lrst is None:
+                    new_lrst = LRState()
+                    new_lrst.lrpoints = closure_LR1(self.__rules, self.is_terminal, new_lrp)
+                    used_lrpoints.append((new_lrp, new_lrst))
+                    queue.append((new_lrp, new_lrst))
+                    lrstates.append(new_lrst)
+                curr_lrst.goto[B] = new_lrst
         self.__lrstates = lrstates
 
     @property
