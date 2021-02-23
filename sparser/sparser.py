@@ -18,6 +18,9 @@ class Rule:
             raise ValueError("Value must be not is None!!!")
         self.__value = val
 
+    def __copy__(self):
+        return Rule(self.key, *self.value)
+
     def __str__(self):
         return self.key + " -> " + " ".join(self.value)
 
@@ -43,6 +46,9 @@ class LR0Point:
 
     @property
     def iptr(self)-> int:
+        if not self.rule is None and \
+           self.__iptr > len(self.rule.value):
+            self.__iptr = len(self.rule.value)
         return self.__iptr
 
     @iptr.setter
@@ -106,14 +112,90 @@ class LR1Point(LR0Point):
         return f"LR1Point(rule={self.rule}, iptr={self.iptr}, lookahead={self.lookahead})"
 
 
+class LRState:
+    __lrpoints: list
+    __goto: dict
+
+    def __init__(self, **kwargs):
+        self.lrpoints = kwargs.get('lrpoints', [])
+        self.goto = kwargs.get('goto', {})
+
+    @property
+    def lrpoints(self)-> list:
+        return self.__lrpoints
+
+    @lrpoints.setter
+    def lrpoints(self, value: list)-> None:
+        if value is None:
+            raise ValueError("lrpoints must be not is None!!!")
+        self.__lrpoints = value
+
+    @property
+    def goto(self)-> dict:
+        return self.__goto
+
+    @goto.setter
+    def goto(self, value: dict)-> None:
+        if value is None:
+            raise ValueError("goto must be not is None!!!")
+        self.__goto = value
+
+def first_term(rules: tuple, terminal_func, value: str)-> list:
+    vals = []
+    queue = []
+    queue.add(value)
+    while len(queue) > 0:
+        val = queue.pop(0)
+        if terminal_func(val):
+            vals.append(val)
+        else:
+            for rule in rules:
+                if rule.key == val:
+                    if len(rule.value) > 0:
+                        queue.append(rule.value[0])
+    return vals
+
+
+def closure_LR1(terminals: list, rules: tuple, lrpoint: LR1Point)-> list:
+    lrpoints = []
+    queue = []
+    lrpoints.append(lrpoint)
+    queue.append(lrpoint)
+    while len(queue) > 0:
+        lrpoint = queue.pop(0)
+        iptr = lrpoint.iptr
+        rule = lrpoint.rule
+        if iptr == -1 or iptr == len(rule.value):
+            continue
+        B = rule.value[iptr]
+        b = rule.value[iptr + 1] if iptr < len(rule.value) - 1 else ''
+
+
+
+def goto_LR1(rules: list, lrstate: LRState, value: str)-> LRState:
+    pass
+
+
 class SParser(ISParser):
-    __rules: dict                                   # rules of grammar
+    __rules: tuple                                   # rules of grammar
+    __tokens: tuple                                  # tokens
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
+        self.rules = kwargs.get("rules", ())
+        self.tokens = kwargs.get("tokens", ())
 
     def parse(self) -> Node:
         if lexer is None:
             raise NoneLexerError("Lexer is None!!!")
+
+    def is_terminal(self, value: str)-> bool:
+        if value in self.__tokens:
+            return True
+        elif len(value) > 0 and value[0] == "'" \
+             and value[len(value) - 1] == "'":
+            return True
+        else:
+            return False
 
     @property
     def lexer(self)-> ILexer:
@@ -124,32 +206,58 @@ class SParser(ISParser):
         self.__lexer = value
 
     @property
-    def rules(self)-> dict:
+    def tokens(self)-> tuple:
+        return self.__tokens
+
+    @tokens.setter
+    def tokens(self, value: tuple)-> None:
+        if value is None:
+            raise ValueError("Rules must be not None!!!")
+        self.__tokens = value
+
+    @property
+    def rules(self)-> tuple:
         """
         Get rules of grammar as
-        {key1: ((val1, val2, ...), (val1, val2, ...), ...) ...}
+        (Rule(key='...', value=(val1, val2, ...)), ...)
         :return:
         """
-        return self.__rules.copy()
+        return tuple(rule.__copy__() for rule in self.__rules)
 
     @rules.setter
-    def rules(self, rules: tuple)-> None:
+    def rules(self, value: tuple)-> None:
         """
-        Parses and sets rules of grammar.
-        from: ('''key1: val1 val2 ... |
-                        val1 val2 ... |
-                        ...''', ...)
-        to: {key1: ((val1, val2, ...), (val1, val2, ...), ...) ...}
-        :param rules: list of grammar rules
+        Sets rules of grammar.
+        :param value: list of grammar rules
         :return: None
         """
-        self.__rules = dict()
-        for rule in rules:
-            key, values = rule.split(':', 1)
+        if value is None:
+            raise ValueError("Rules must be not None!!!")
+        self.__rules = tuple(rule.__copy__() for rule in value)
+
+    def parse_rules_from(self, specification: str)-> None:
+        self.__rules = self.parse_rules(specification)
+
+    @staticmethod
+    def parse_rules(specification: str)-> tuple:
+        """
+        Parses and sets rules of grammar.
+        from:   key1 -> val1 val2 ... |
+                        val1 val2 ... |
+                        ...;
+                key2 -> val1 val2 ... |
+                        val1 val2 ... |
+                        ...;
+        to: (Rule(key='...', value=(val1, val2, ...)), ...)
+        :param specification: string of grammar rules
+        :return: None
+        """
+        rules = []
+        for requir in specification.split(';\n'):
+            key, values = requir.split('->', 1)
             key = key.strip()
             values = values.split('|\n')
-            vals = []
             for value in values:
-                vals.append(tuple(val for val in value.strip().split(' ')))
-            vals = tuple(vals)
-            self.__rules[key] = vals
+                rule = Rule(key, *[val for val in value.strip().split(' ')])
+                rules.append(rule)
+        return tuple(rules)
