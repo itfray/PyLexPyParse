@@ -414,6 +414,58 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
     return lrstates
 
 
+def can_merge_LR1_states(lrst1: LRState, lrst2: LRState)-> bool:
+    if len(lrst1.lrpoints) == len(lrst2.lrpoints):
+        for k in range(len(lrst1.lrpoints)):
+            lrp1 = lrst1.lrpoints[k]
+            lrp2 = lrst2.lrpoints[k]
+            if lrp1.iptr != lrp2.iptr or \
+               lrp1.rule != lrp2.rule:
+                return False
+        return True
+    return False
+
+def merge_LR1_states(lrst1: LRState, lrst2: LRState)-> LRState:
+    new_lrst = LRState()
+    for k in range(len(lrst1.lrpoints)):
+        lrp1 = lrst1.lrpoints[k]
+        lrp2 = lrst2.lrpoints[k]
+        lrp = LR1Point(rule=lrp1.rule, iptr=lrp1.iptr,
+                       lookahead=lrp1.lookahead + lrp2.lookahead)
+        new_lrst.lrpoints.append(lrp)
+
+    for key in lrst1.goto:
+        lrst = lrst1.goto[key]
+        new_lrst.goto[key] = lrst
+        lrst.rgoto[key].remove(lrst1)
+        lrst.rgoto[key].append(new_lrst)
+
+    for key in lrst2.goto:
+        lrst = lrst2.goto[key]
+        if new_lrst.goto.get(key, None) is None:
+            new_lrst.goto[key] = lrst
+        lrst.rgoto[key].remove(lrst2)
+        lrst.rgoto[key].append(new_lrst)
+
+    new_lrst.rgoto = {key: lrst1.rgoto[key].copy() for key in lrst1.rgoto}
+    for key in lrst2.rgoto:
+        refs = new_lrst.rgoto.get(key, [])
+        for lrst1 in lrst2.rgoto[key]:
+            add_flag = True
+            for lrst2 in refs:
+                if lrst1 is lrst2:
+                    add_flag = False
+                    break
+            if add_flag:
+                refs.append(lrst1)
+        new_lrst.rgoto[key] = refs
+
+    for key in new_lrst.rgoto:
+        for lrst in new_lrst.rgoto[key]:
+            lrst.goto[key] = new_lrst
+    return new_lrst
+
+
 def states_LR1_to_LALR1(lrstates: list)-> list:
     """
     Transform list of LR1-states to LALR1-states.
@@ -432,56 +484,13 @@ def states_LR1_to_LALR1(lrstates: list)-> list:
             for j in range(pos_j, len(lrstates)):
                 pos_j = j
                 if len(lrstates[i].lrpoints) == len(lrstates[j].lrpoints):
-                    merge_flag = True
-                    for k in range(len(lrstates[i].lrpoints)):
-                        lrp1 = lrstates[i].lrpoints[k]
-                        lrp2 = lrstates[j].lrpoints[k]
-                        if lrp1.iptr != lrp2.iptr or\
-                           lrp1.rule != lrp2.rule:
-                            merge_flag = False
-                            break
-                if merge_flag: break
-            if merge_flag: break
+                    merge_flag = can_merge_LR1_states(lrstates[i], lrstates[j])
+                if merge_flag:
+                    break
+            if merge_flag:
+                break
         if merge_flag:
-            lrsti = lrstates[pos_i]
-            lrstj = lrstates[pos_j]
-            new_lrst = LRState()
-            for k in range(len(lrsti.lrpoints)):
-                lrp1 = lrsti.lrpoints[k]
-                lrp2 = lrstj.lrpoints[k]
-                lrp = LR1Point(rule=lrp1.rule, iptr=lrp1.iptr,
-                               lookahead=lrp1.lookahead + lrp2.lookahead)
-                new_lrst.lrpoints.append(lrp)
-
-            for key in lrsti.goto:
-                lrst = lrsti.goto[key]
-                new_lrst.goto[key] = lrst
-                lrst.rgoto[key].remove(lrsti)
-                lrst.rgoto[key].append(new_lrst)
-
-            for key in lrstj.goto:
-                lrst = lrstj.goto[key]
-                if new_lrst.goto.get(key, None) is None:
-                    new_lrst.goto[key] = lrst
-                lrst.rgoto[key].remove(lrstj)
-                lrst.rgoto[key].append(new_lrst)
-
-            new_lrst.rgoto = {key: lrsti.rgoto[key].copy() for key in lrsti.rgoto}
-            for key in lrstj.rgoto:
-                refs = new_lrst.rgoto.get(key, [])
-                for lrst1 in lrstj.rgoto[key]:
-                    add_flag = True
-                    for lrst2 in refs:
-                        if lrst1 is lrst2:
-                            add_flag = False
-                            break
-                    if add_flag:
-                        refs.append(lrst1)
-                new_lrst.rgoto[key] = refs
-
-            for key in new_lrst.rgoto:
-                for lrst in new_lrst.rgoto[key]:
-                    lrst.goto[key] = new_lrst
+            new_lrst = merge_LR1_states(lrstates[pos_i], lrstates[pos_j])
             lrstates[pos_i] = new_lrst
             lrstates.pop(pos_j)
             pos_j -= 1
