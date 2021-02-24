@@ -36,14 +36,18 @@ class Rule:
     def __ne__(self, other):
         return not self == other
 
-    def __copy__(self):
-        return Rule(self.key, *self.value)
-
     def __str__(self):
         return self.key + " -> " + " ".join(self.value)
 
     def __repr__(self):
         return f"Rules(key='{self.key}', value={self.value})"
+
+
+class IndRule(Rule):
+    index: int
+    def __init__(self, key, *value):
+        super().__init__(key, *value)
+        index = 0
 
 
 class LR0Point:
@@ -386,16 +390,18 @@ class CellSParseTab:
         self.value = kwargs.get("value", 0)
 
     def __str__(self):
+        cond =  True
         if self.action == self.ACC:
             ans = 'acc'
+            cond = False
         elif self.action == self.RUL:
             ans = 'r'
         elif self.action == self.SHF:
             ans = 's'
         else:
             ans = ''
-        if self.value != 0:
-            ans += str(self.value)
+            cond = self.value != 0
+        if cond: ans += str(self.value)
         return ans
 
     def __repr__(self):
@@ -429,6 +435,12 @@ class SParseTab:
     def headers(self)-> tuple:
         return tuple(hdr for hdr in self.__headers)
 
+    @headers.setter
+    def headers(self, value: tuple)-> None:
+        self.__headers.clear()
+        for i in range(len(value)):
+            self.__headers[value[i]] = i
+
     @property
     def rows(self)-> int:
         return len(self.__content)
@@ -440,11 +452,39 @@ class SParseTab:
         else:
             return 0
 
-    @headers.setter
-    def headers(self, value: tuple)-> None:
-        self.__headers.clear()
-        for i in range(len(value)):
-            self.__headers[value[i]] = i
+
+def create_sparse_tab(rules: list, lrstates: list, term_func,
+                      goal_nterm: str, end_term: str)-> SParseTab:
+    all_symbols = [end_term]
+    for lrst in lrstates:
+        for s in lrst.goto:
+            if s not in all_symbols:
+                all_symbols.append(s)
+    sparse_tab = SParseTab(headers=all_symbols,
+                                rows=len(lrstates))
+    for i in range(len(lrstates)):
+        for lrpoint in lrstates[i].lrpoints:
+            if lrpoint.iptr == -1:
+                continue
+            elif lrpoint.iptr == len(lrpoint.rule.value):
+                if lrpoint.rule.key == goal_nterm:
+                    cell = cell = sparse_tab.cell_hdr(i, lrpoint.lookahead[0])
+                    cell.action = cell.ACC
+                else:
+                    for s in lrpoint.lookahead:
+                        cell = cell = sparse_tab.cell_hdr(i, s)
+                        cell.action = cell.RUL
+                        cell.value = lrpoint.rule.index
+            else:
+                a = lrpoint.rule.value[lrpoint.iptr]
+                cell = sparse_tab.cell_hdr(i, a)
+                new_lrst = lrstates[i].goto.get(a, None)
+                if new_lrst is None:
+                    continue
+                if term_func(a):
+                    cell.action = cell.SHF
+                cell.value = new_lrst.index
+    return sparse_tab
 
 
 class SParser(ISParser):
@@ -499,41 +539,15 @@ class SParser(ISParser):
                 rule = self.__rules[0]
             else:
                 return
-        goal_rule = Rule(rule.key + "'", rule.key)
-        self.__rules = [goal_rule] + self.__rules
-        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])
+        self.goal_nterm = rule.key
+        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])
         self.__lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)
 
     def create_sparse_tab(self)-> None:
         self.create_lrstates()
-        all_symbols = [self.end_term]
-        for lrst in self.__lrstates:
-            for key in lrst.goto:
-                if key not in all_symbols:
-                    all_symbols.append(key)
-        self.sparse_tab = SParseTab(headers=all_symbols,
-                                    rows=len(self.__lrstates))
-        for i in range(len(self.__lrstates)):
-            for lrpoint in self.__lrstates[i].lrpoints:
-                if lrpoint.iptr == len(lrpoint.rule.value):
-                    if lrpoint.rule.key == self.goal_nterm:
-                        cell = self.sparse_tab.cell_hdr(i, lrpoint.lookahead[0])
-                        cell.action = cell.ACC
-                    else:
-                        ind = self.__rules.index(lrpoint.rule)
-                        for s in lrpoint.lookahead:
-                            cell = self.sparse_tab.cell_hdr(i, s)
-                            cell.action = cell.RUL
-                            cell.value = ind
-                    break
-            for s in self.__lrstates[i].goto:
-                cell = self.sparse_tab.cell_hdr(i, s)
-                new_lrst = self.__lrstates[i].goto[s]
-                if self.is_terminal(s):
-                    cell.action = cell.SHF
-                cell.value = new_lrst.index
-
-
+        self.sparse_tab = create_sparse_tab(self.__rules, self.__lrstates,
+                                            self.is_terminal, self.goal_nterm,
+                                            self.end_term)
 
     @property
     def lexer(self)-> ILexer:
@@ -609,11 +623,14 @@ class SParser(ISParser):
         :return: None
         """
         rules = []
+        index = 0
         for requir in specification.split(';\n'):
             key, values = requir.split('->', 1)
             key = key.strip()
             values = values.split('|\n')
             for value in values:
-                rule = Rule(key, *[val for val in value.strip().split(' ')])
+                rule = IndRule(key, *[val for val in value.strip().split(' ')])
+                rule.index = index
                 rules.append(rule)
+                index += 1
         return rules

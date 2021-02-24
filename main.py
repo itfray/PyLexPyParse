@@ -1,9 +1,10 @@
 from sparser.sparser import SParser, CellSParseTab, SParseTab
 
 
-GOAL_NTERM = 'S'
+GOAL_NTERM = "S'"
 END_TERM = '⊥'
 RULES = """
+         S' -> S;
          S -> C C;
          C -> c C |
               d
