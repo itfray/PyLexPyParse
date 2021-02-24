@@ -44,7 +44,10 @@ class Rule:
 
 
 class IndRule(Rule):
-    index: int
+    """
+    IndRule is rule of grammar of language with index
+    """
+    index: int                        # index of rule
     def __init__(self, key, *value):
         super().__init__(key, *value)
         index = 0
@@ -412,6 +415,11 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
 
 
 def states_LR1_to_LALR1(lrstates: list):
+    """
+    Transform list of LR1-states to LALR1-states.
+    :param lrstates: list of LR1-states
+    :return: None
+    """
     pos_i = 0
     pos_j = len(lrstates) - 1
     while pos_i < len(lrstates) - 1:
@@ -587,8 +595,8 @@ class SParser(ISParser):
     __tokens: tuple                                  # tokens
     goal_nterm: str
     end_term: str
-    __lrstates: list                                 # LR-states of LR state machine
     sparse_tab: SParseTab
+
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
         self.rules = kwargs.get("rules", [])
@@ -617,11 +625,7 @@ class SParser(ISParser):
         else:
             return False
 
-    def create_lrstates(self)-> None:
-        """
-        Create all LR-states of LR state machine
-        :return: None
-        """
+    def create_sparse_tab(self)-> None:
         rule = None
         for r in self.__rules:
             if r.key == self.goal_nterm:
@@ -634,12 +638,9 @@ class SParser(ISParser):
                 return
         self.goal_nterm = rule.key
         lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])
-        self.__lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)
-
-    def create_sparse_tab(self)-> None:
-        self.create_lrstates()
-        states_LR1_to_LALR1(self.__lrstates)
-        self.sparse_tab = create_sparse_tab(self.__rules, self.__lrstates,
+        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)  # create LR-states of LR state machine
+        states_LR1_to_LALR1(lrstates)
+        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,
                                             self.is_terminal, self.goal_nterm,
                                             self.end_term)
 
@@ -700,6 +701,11 @@ class SParser(ISParser):
         self.__rules = value
 
     def parse_rules_from(self, specification: str)-> None:
+        """
+        Parses and sets rules of grammar.
+        :param specification: string of grammar rules
+        :return: None
+        """
         self.__rules = self.parse_rules(specification)
 
     @staticmethod
