@@ -631,35 +631,52 @@ class SParseTab:
 
 def create_sparse_tab(rules: list, lrstates: list, term_func,
                       goal_nterm: str, end_term: str)-> SParseTab:
-    all_symbols = [end_term]
-    for lrst in lrstates:
-        for s in lrst.goto:
-            if s not in all_symbols:
-                all_symbols.append(s)
-    sparse_tab = SParseTab(headers=all_symbols,
-                                rows=len(lrstates))
+    """
+    Create SParse table.
+    Creating by next rules:
+        1) if [A -> α●aβ, b] included in Ii and GOTO(Ii,a) = Ij then
+        SPARSE_TAB[i,a] = 'sj' (SHIFT j)
+        2) if [A -> α●, a] included in Ii and A != S' then
+        SPARSE_TAB[i,a] = 'rj' (APPLY RULE j)
+        3) if [S' -> S●, end] included in Ii then
+        SPARSE_TAB[i,end] = 'acc' (ACCEPT)
+        4) if [A -> α●Bβ, b] included in Ii and GOTO(Ii,B) = Ij then
+        SPARSE_TAB[i,B] = 'j' (GOTO j)
+    :param rules: rules of grammar
+    :param lrstates: LR-states of LR state machine
+    :param term_func: predicate for definition terminal symbols
+    :param goal_nterm: goal nterminal of grammar
+    :param end_term: end terminal of grammar
+    :return: SParse table
+    """
+    if len(lrstates) == 0:
+        return
+    headers = [key for key in lrstates[0].goto]     # get all symbols of transition
+    headers += [end_term]
+    sparse_tab = SParseTab(headers=headers,         # init matrix
+                           rows=len(lrstates))
     for i in range(len(lrstates)):
         for lrpoint in lrstates[i].lrpoints:
             if lrpoint.iptr == -1:
                 continue
-            elif lrpoint.iptr == len(lrpoint.rule.value):
-                if lrpoint.rule.key == goal_nterm:
+            elif lrpoint.iptr == len(lrpoint.rule.value):     # if [A -> α●, a]
+                if lrpoint.rule.key == goal_nterm:                               # if [S' -> S●, end]
                     cell = cell = sparse_tab.cell_hdr(i, lrpoint.lookahead[0])
-                    cell.action = cell.ACC
+                    cell.action = cell.ACC                                       # set ACCEPT
                 else:
                     for s in lrpoint.lookahead:
                         cell = cell = sparse_tab.cell_hdr(i, s)
-                        cell.action = cell.RUL
+                        cell.action = cell.RUL                       # set APPLY RULE i
                         cell.value = lrpoint.rule.index
-            else:
+            else:                                                    # if [A -> α●γβ, b]
                 a = lrpoint.rule.value[lrpoint.iptr]
                 cell = sparse_tab.cell_hdr(i, a)
                 new_lrst = lrstates[i].goto.get(a, None)
                 if new_lrst is None:
                     continue
-                if term_func(a):
-                    cell.action = cell.SHF
-                cell.value = new_lrst.index
+                if term_func(a):                   # if [A -> α●aβ, b]
+                    cell.action = cell.SHF         # set SHIFT i
+                cell.value = new_lrst.index        # else [A -> α●Bβ, b], set GOTO i
     return sparse_tab
 
 
