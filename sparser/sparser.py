@@ -411,8 +411,7 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
     return lrstates
 
 
-def states_LR1_to_LALR1(lrstates: list)-> list:
-    lrstates = lrstates.copy()
+def states_LR1_to_LALR1(lrstates: list):
     pos_i = 0
     pos_j = len(lrstates) - 1
     while pos_i < len(lrstates) - 1:
@@ -424,34 +423,54 @@ def states_LR1_to_LALR1(lrstates: list)-> list:
             for j in range(pos_j, len(lrstates)):
                 pos_j = j
                 if len(lrstates[i].lrpoints) == len(lrstates[j].lrpoints):
-                    count_lrps = 0
+                    merge_flag = True
                     for k in range(len(lrstates[i].lrpoints)):
                         lrp1 = lrstates[i].lrpoints[k]
                         lrp2 = lrstates[j].lrpoints[k]
-                        if lrp1.iptr == lrp2.iptr and\
-                           lrp1.rule == lrp2.rule:
-                            count_lrps += 1
-                    if count_lrps == len(lrstates[i].lrpoints):
-                        merge_flag = True
-                        break
-            if merge_flag:
-                break
+                        if lrp1.iptr != lrp2.iptr or\
+                           lrp1.rule != lrp2.rule:
+                            merge_flag = False
+                            break
+                if merge_flag: break
+            if merge_flag: break
         if merge_flag:
-            new_lrstate = LRState()
-            for k in range(len(lrstates[pos_i].lrpoints)):
-                lrp1 = lrstates[pos_i].lrpoints[k]
-                lrp2 = lrstates[pos_j].lrpoints[k]
+            lrsti = lrstates[pos_i]
+            lrstj = lrstates[pos_j]
+            lrpoints = []
+            for k in range(len(lrsti.lrpoints)):
+                lrp1 = lrsti.lrpoints[k]
+                lrp2 = lrstj.lrpoints[k]
                 lrp = LR1Point(rule=lrp1.rule, iptr=lrp1.iptr,
                                lookahead=lrp1.lookahead + lrp2.lookahead)
-                new_lrstate.lrpoints.append(lrp)
-            new_lrstate.goto = lrstates[pos_i].goto.copy()
-            for key in lrstates[pos_j].goto:
-                new_lrstate.goto[key] = lrstates[pos_j].goto[key]
-            new_lrstate.rgoto = lrstates[pos_i].rgoto.copy()
-            for key in lrstates[pos_j].rgoto:
-                refs = new_lrstate.rgoto.get(key, None)
+                lrpoints.append(lrp)
+            lrsti.lrpoints = lrpoints
 
+            for key in lrstj.goto:
+                lrst = lrstj.goto[key]
+                if lrsti.goto.get(key, None) is None:
+                    lrsti.goto[key] = lrst
+                lrst.rgoto[key].remove(lrstj)
+                lrst.rgoto[key].append(lrsti)
 
+            for key in lrstj.rgoto:
+                refs = lrsti.rgoto.get(key, [])
+                for lrst1 in lrstj.rgoto[key]:
+                    flag = True
+                    for lrst2 in refs:
+                        if lrst1 is lrst2:
+                            flag = False
+                            break
+                    if flag:
+                        refs.append(lrst1)
+                lrsti.rgoto[key] = refs
+
+            for key in lrsti.rgoto:
+                for lrst in lrsti.rgoto[key]:
+                    lrst.goto[key] = lrsti
+            lrstates.pop(pos_j)
+            pos_j -= 1
+    for i in range(len(lrstates)):
+        lrstates[i].index = i
 
 
 class CellSParseTab:
@@ -619,6 +638,7 @@ class SParser(ISParser):
 
     def create_sparse_tab(self)-> None:
         self.create_lrstates()
+        states_LR1_to_LALR1(self.__lrstates)
         self.sparse_tab = create_sparse_tab(self.__rules, self.__lrstates,
                                             self.is_terminal, self.goal_nterm,
                                             self.end_term)
