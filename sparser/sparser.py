@@ -1,4 +1,5 @@
-from .isparser import ISParser, Node, NoneLexerError, ILexer
+from .isparser import ISParser, ILexer, Node, \
+                      SParserError, NoneLexerError
 
 
 class Rule:
@@ -680,14 +681,23 @@ def create_sparse_tab(rules: list, lrstates: list, term_func,
     return sparse_tab
 
 
+class NoneSParseTabErr(SParserError):
+    """
+     NoneSParseTabErr is class of errors for syntax analyzer SParser
+     Raise when parser's parsing table not found (is None).
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
 class SParser(ISParser):
-    DEFAULT_GOAL_NTERM = ''
-    DEFAULT_END_TERM = '⊥'
-    __rules: list                                    # rules of grammar
-    __tokens: tuple                                  # tokens
-    goal_nterm: str
-    end_term: str
-    sparse_tab: SParseTab
+    DEFAULT_GOAL_NTERM = ''          # default goal nterminal
+    DEFAULT_END_TERM = '⊥'           # default end terminal
+    __rules: list                    # rules of grammar
+    __tokens: tuple                  # tokens
+    goal_nterm: str                  # goal nterminal symbol
+    end_term: str                    # end terminal symbol
+    sparse_tab: SParseTab            # parsing table
 
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
@@ -698,8 +708,14 @@ class SParser(ISParser):
         self.sparse_tab = kwargs.get('sparse_tab', None)
 
     def parse(self) -> Node:
+        """
+        Parses tokens and constructs parse tree
+        :return: root of parse tree
+        """
         if lexer is None:
             raise NoneLexerError("Lexer is None!!!")
+        if self.sparse_tab is None:
+            raise NoneSParseTabErr("Parsing table is None!!!")
 
     def is_terminal(self, value: str)-> bool:
         """
@@ -718,8 +734,12 @@ class SParser(ISParser):
             return False
 
     def create_sparse_tab(self)-> None:
+        """
+        Creates parsing table for parser
+        :return: None
+        """
         rule = None
-        for r in self.__rules:
+        for r in self.__rules:              # find goal rule
             if r.key == self.goal_nterm:
                 rule = r
                 break
@@ -729,11 +749,12 @@ class SParser(ISParser):
             else:
                 return
         self.goal_nterm = rule.key
-        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])
-        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)  # create LR-states of LR state machine
-        lrstates = states_LR1_to_LALR1(lrstates)
-        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,
-                                            self.is_terminal, self.goal_nterm,
+        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
+        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)  # create LR1-states of LR1 state machine
+        lrstates = states_LR1_to_LALR1(lrstates)                           # transform LR1-states to LALR1-states
+        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,        # create parsing table
+                                            self.is_terminal,
+                                            self.goal_nterm,
                                             self.end_term)
 
     @property
