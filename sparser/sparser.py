@@ -189,10 +189,12 @@ class LRState:
     index: int                              # index of LR-state
     __lrpoints: list                        # LR-points of LR-state
     __goto: dict                            # transitions in other states
+    __rgoto: dict                           # reverse transitions in other states
 
     def __init__(self, **kwargs):
         self.lrpoints = kwargs.get('lrpoints', [])
         self.goto = kwargs.get('goto', {})
+        self.rgoto = kwargs.get('rgoto', {})
         self.index = kwargs.get('index', 0)
 
     @property
@@ -235,6 +237,27 @@ class LRState:
             raise ValueError("goto must be not is None!!!")
         self.__goto = value
 
+    @property
+    def rgoto(self)-> dict:
+        """
+        Get reverse transitions in other states.
+        key - symbol for transition
+        value - new state
+        :return: dictionary of reverse transitions
+        """
+        return self.__rgoto
+
+    @rgoto.setter
+    def rgoto(self, value: dict)-> None:
+        """
+        Set reverse transitions in other states.
+        :param value: dictionary of reverse transitions
+        :return: None
+        """
+        if value is None:
+            raise ValueError("rgoto must be not is None!!!")
+        self.__rgoto = value
+
     def __str__(self):
         ans = "["
         for i in range(len(self.lrpoints)):
@@ -245,6 +268,11 @@ class LRState:
         if len(self.goto) > 0:
             ans += "\n{ "
             for key in self.goto:
+                ans += key + "; "
+            ans += "}"
+        if len(self.rgoto) > 0:
+            ans += "\nr{ "
+            for key in self.rgoto:
                 ans += key + "; "
             ans += "}"
         return ans
@@ -377,6 +405,9 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
                 queue.append((new_lrp, new_lrst))          # add Ii for processing
                 lrstates.append(new_lrst)                  # add Ii
             curr_lrst.goto[B] = new_lrst                   # set transition
+            refs = new_lrst.rgoto.get(B, [])               # set reverse transition
+            refs.append(curr_lrst)
+            new_lrst.rgoto[B] = refs
     return lrstates
 
 
