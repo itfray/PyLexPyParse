@@ -413,44 +413,56 @@ def create_LR1States(rules: list, term_func, lrpoint: LR1Point)-> list:
             new_lrst.rgoto[B] = refs
     return lrstates
 
-
 def can_merge_LR1_states(lrst1: LRState, lrst2: LRState)-> bool:
+    """
+    Check can merge first LR1-state and second LR1-state?
+    :param lrst1: LR1-state
+    :param lrst2: LR1-state
+    :return: bool
+    """
     if len(lrst1.lrpoints) == len(lrst2.lrpoints):
         for k in range(len(lrst1.lrpoints)):
             lrp1 = lrst1.lrpoints[k]
             lrp2 = lrst2.lrpoints[k]
             if lrp1.iptr != lrp2.iptr or \
-               lrp1.rule != lrp2.rule:
+               lrp1.rule != lrp2.rule:       # check pointers ● and rules
                 return False
         return True
     return False
 
 def merge_LR1_states(lrst1: LRState, lrst2: LRState)-> LRState:
-    new_lrst = LRState()
-    for k in range(len(lrst1.lrpoints)):
+    """
+    Merge first LR1-state and second LR1-state
+    :param lrst1: LR1-state
+    :param lrst2: LR1-state
+    :return: new LR1-state
+    """
+    new_lrst = LRState()                        # create new LR-state
+    for k in range(len(lrst1.lrpoints)):        # merge LR1-points
         lrp1 = lrst1.lrpoints[k]
         lrp2 = lrst2.lrpoints[k]
         lrp = LR1Point(rule=lrp1.rule, iptr=lrp1.iptr,
                        lookahead=lrp1.lookahead + lrp2.lookahead)
         new_lrst.lrpoints.append(lrp)
 
-    for key in lrst1.goto:
+    for key in lrst1.goto:                        # add all goto transitions from lrst1
         lrst = lrst1.goto[key]
-        new_lrst.goto[key] = lrst
-        lrst.rgoto[key].remove(lrst1)
+        new_lrst.goto[key] = lrst                 # add goto transition
+        lrst.rgoto[key].remove(lrst1)             # fix rgoto transition in other states
         lrst.rgoto[key].append(new_lrst)
 
-    for key in lrst2.goto:
+    for key in lrst2.goto:                        # add all goto transitions from lrst2
         lrst = lrst2.goto[key]
         if new_lrst.goto.get(key, None) is None:
-            new_lrst.goto[key] = lrst
-        lrst.rgoto[key].remove(lrst2)
+            new_lrst.goto[key] = lrst             # add goto transition
+        lrst.rgoto[key].remove(lrst2)             # fix rgoto transition in other states
         lrst.rgoto[key].append(new_lrst)
 
-    new_lrst.rgoto = {key: lrst1.rgoto[key].copy() for key in lrst1.rgoto}
-    for key in lrst2.rgoto:
+    new_lrst.rgoto = {key: lrst1.rgoto[key].copy()  # add all rgoto transitions from lrst1
+                      for key in lrst1.rgoto}
+    for key in lrst2.rgoto:                         # add all rgoto transitions from lrst2
         refs = new_lrst.rgoto.get(key, [])
-        for lrst1 in lrst2.rgoto[key]:
+        for lrst1 in lrst2.rgoto[key]:              # add rgoto transitions excluding duplicates
             add_flag = True
             for lrst2 in refs:
                 if lrst1 is lrst2:
@@ -460,11 +472,10 @@ def merge_LR1_states(lrst1: LRState, lrst2: LRState)-> LRState:
                 refs.append(lrst1)
         new_lrst.rgoto[key] = refs
 
-    for key in new_lrst.rgoto:
+    for key in new_lrst.rgoto:                 # fix goto transitions in other states
         for lrst in new_lrst.rgoto[key]:
             lrst.goto[key] = new_lrst
     return new_lrst
-
 
 def states_LR1_to_LALR1(lrstates: list)-> list:
     """
@@ -475,6 +486,7 @@ def states_LR1_to_LALR1(lrstates: list)-> list:
     lrstates = lrstates.copy()
     pos_i = 0
     pos_j = len(lrstates) - 1
+    # merge all LR-states with common core
     while pos_i < len(lrstates) - 1:
         merge_flag = False
         for i in range(pos_i, len(lrstates)):
@@ -494,16 +506,22 @@ def states_LR1_to_LALR1(lrstates: list)-> list:
             lrstates[pos_i] = new_lrst
             lrstates.pop(pos_j)
             pos_j -= 1
-    for i in range(len(lrstates)):
+    for i in range(len(lrstates)):              # fix indices in LR-states
         lrstates[i].index = i
     return lrstates
 
 
 class CellSParseTab:
-    # empty, accept, rule, shift
-    EMP, ACC, RUL, SHF = range(0, 4)
-    action: int
-    value: int
+    """
+    CellSParseTab is cell for SParse table
+    """
+    EMP: int                                            # empty
+    ACC: int                                            # accept
+    RUL: int                                            # apply rule
+    SHF: int                                            # shift
+    EMP, ACC, RUL, SHF = range(0, 4)                    # values of cell action
+    action: int                                         # cell action
+    value: int                                          # cell value
     def __init__(self, **kwargs):
         self.action = kwargs.get("action", self.EMP)
         self.value = kwargs.get("value", 0)
@@ -528,8 +546,12 @@ class CellSParseTab:
 
 
 class SParseTab:
-    __headers: dict
-    __content: list
+    """
+    SParseTab is table of parsing or
+    сanonical matrix of syntax analysis.
+    """
+    __headers: dict                                 # headers of table
+    __content: list                                 # matrix
     def __init__(self, **kwargs):
         self.__headers = dict()
         self.__content = []
@@ -537,6 +559,12 @@ class SParseTab:
         self.create(kwargs.get('rows', 0))
 
     def create(self, rows: int)-> None:
+        """
+        Create matrix by count of row and count of columns.
+        Count of columns equal count of headers.
+        :param rows: count of rows
+        :return: None
+        """
         self.clear()
         for i in range(rows):
             self.__content.append([CellSParseTab() for i in range(len(self.__headers))])
@@ -545,27 +573,56 @@ class SParseTab:
         self.__content.clear()
 
     def cell_ind(self, irow: int, icol: int)-> CellSParseTab:
+        """
+        Get cell by index of row and index of column
+        :param irow: index of row
+        :param icol: index of column
+        :return: cell
+        """
         return self.__content[irow][icol]
 
     def cell_hdr(self, irow: int, ncol: str)-> CellSParseTab:
+        """
+        Get cell by index of row and name of column
+        :param irow: index of row
+        :param ncol: name of column
+        :return: cell
+        """
         return self.__content[irow][self.__headers[ncol]]
 
     @property
     def headers(self)-> tuple:
+        """
+        Get headers
+        :return: tuple of headers
+        """
         return tuple(hdr for hdr in self.__headers)
 
     @headers.setter
     def headers(self, value: tuple)-> None:
+        """
+        Set headers
+        :param value: tuple of headers
+        :return: None
+        """
         self.__headers.clear()
         for i in range(len(value)):
             self.__headers[value[i]] = i
 
     @property
     def rows(self)-> int:
+        """
+        Count of matrix rows
+        :return: count of rows
+        """
         return len(self.__content)
 
     @property
     def columns(self)-> int:
+        """
+        Count of matrix columns
+        :return: count of columns
+        """
         if len(self.__content) > 0:
             return len(self.__content[0])
         else:
