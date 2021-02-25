@@ -316,15 +316,18 @@ def first_term(rules: list, terminal_func, value: str)-> list:
     ans = []                    # list of found terminal symbols
     queue = []
     queue.append(value)
+    checked_rules = []
     while len(queue) > 0:       # breadth-first search (BFS)
         val = queue.pop(0)
         if terminal_func(val):
             ans.append(val)     # add terminal
         else:
             for rule in rules:
-                if rule.key == val:
+                if rule.key == val and\
+                   rule not in checked_rules:
                     if len(rule.value) > 0:
                         queue.append(rule.value[0])   # add new symbol for check
+                        checked_rules.append(rule)
     return ans
 
 def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
@@ -660,21 +663,21 @@ class SParseTab:
             return 0
 
 
-def print_sparse_tab(tab: SParseTab):
-    print('+' + ('-' * 6 + '+') * (len(tab.headers) + 1))
-    print(f"|{' ':^6}|", end="")
+def print_sparse_tab(tab: SParseTab, size_cell = 6):
+    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
+    print(f"|{' ':^{size_cell}}|", end="")
     for hdr in tab.headers:
-        print(f"{str(hdr):^6}|", end="")
+        print(f"{str(hdr):^{size_cell}}|", end="")
     print()
-    print('+' + ('-'*6 + '+') * (len(tab.headers) + 1))
+    print('+' + ('-'*size_cell + '+') * (len(tab.headers) + 1))
     irow = 0
     for row in tab._SParseTab__content:
-        print(f"|{str(irow):^6}|", end="")
+        print(f"|{str(irow):^{size_cell}}|", end="")
         for e in row:
-            print(f"{str(e):^6}|", end="")
+            print(f"{str(e):^{size_cell}}|", end="")
         print()
         irow += 1
-    print('+' + ('-' * 6 + '+') * (len(tab.headers) + 1))
+    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
 
 
 def create_sparse_tab(rules: list, lrstates: list, term_func,
