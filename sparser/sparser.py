@@ -633,15 +633,17 @@ class SParseTab:
         return tuple(hdr for hdr in self.__headers)
 
     @headers.setter
-    def headers(self, value: tuple)-> None:
+    def headers(self, value)-> None:
         """
         Set headers
-        :param value: tuple of headers
+        :param value: list of headers
         :return: None
         """
         self.__headers.clear()
-        for i in range(len(value)):
-            self.__headers[value[i]] = i
+        ind = 0
+        for e in value:
+            self.__headers[e] = ind
+            ind += 1
 
     @property
     def rows(self)-> int:
@@ -702,8 +704,11 @@ def create_sparse_tab(rules: list, lrstates: list, term_func,
     """
     if len(lrstates) == 0:
         return
-    headers = [key for key in lrstates[0].goto]     # get all symbols of transition
-    headers += [end_term]
+    headers = set()
+    for lrstate in lrstates:         # get all symbols of transitions
+        for key in lrstate.goto:
+            headers.add(key)
+    headers.add(end_term)
     sparse_tab = SParseTab(headers=headers,         # init matrix
                            rows=len(lrstates))
     for i in range(len(lrstates)):
