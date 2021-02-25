@@ -316,18 +316,19 @@ def first_term(rules: list, terminal_func, value: str)-> list:
     ans = []                    # list of found terminal symbols
     queue = []
     queue.append(value)
-    checked_rules = []
+    # checked_rules = []
     while len(queue) > 0:       # breadth-first search (BFS)
         val = queue.pop(0)
         if terminal_func(val):
             ans.append(val)     # add terminal
         else:
             for rule in rules:
-                if rule.key == val and\
-                   rule not in checked_rules:
+                if rule.key == val:
+                # if rule.key == val and\
+                #    rule not in checked_rules:
                     if len(rule.value) > 0:
                         queue.append(rule.value[0])   # add new symbol for check
-                        checked_rules.append(rule)
+                        # checked_rules.append(rule)
     return ans
 
 def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
@@ -342,12 +343,12 @@ def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
     :param lrpoint: LR-point who need calulate set of CLOSURE(...)
     :return: list of LR-points for LR-state
     """
-    used_rules = []
+    # used_rules = []
     lrpoints = []                   # CLOSURE(...), list of LR-points
     queue = []
     lrpoints.append(lrpoint)
     queue.append(lrpoint)
-    used_rules.append(lrpoint.rule)
+    # used_rules.append(lrpoint.rule)
     while len(queue) > 0:           # breadth-first search (BFS)
         lrpoint = queue.pop(0)
         iptr = lrpoint.iptr
@@ -361,12 +362,13 @@ def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
         if len(firstb) == 0:
             firstb += lrpoint.lookahead               # calculate FIRST(a)
         for rule in rules:
-            if B == rule.key and\
-               rule not in used_rules:
+            if B == rule.key:
+            # if B == rule.key and\
+            #    rule not in used_rules:
                 lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)   # add rule [B -> ●γ, FIRST(βa)]
                 queue.append(lrp)
                 lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
-                used_rules.append(rule)
+                # used_rules.append(rule)
     return lrpoints
 
 def goto_LR1Point(lrpoints: list, value: str)-> LR1Point:
