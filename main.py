@@ -51,8 +51,13 @@ parser = SParser(lexer=lexer,
                  end_term=END_TERM)
 parser.parse_rules_from(RULES)
 
-from sparser.sparser import first_term
-print(first_term(parser.rules, parser.is_terminal, "F"))
+from sparser.sparser import first_term, closure_LR1, LR1Point, Rule
+lrsts = closure_LR1(parser.rules,
+                    parser.is_terminal,
+                    LR1Point(rule=Rule("E", "E", "'+'", "T"),
+                             iptr=0, lookahead=['⊥']))
+for lrst in lrsts:
+    print(lrst)
 # parser.create_sparse_tab()
 # print_sparse_tab(parser.sparse_tab, 10)
 # node = parser.parse()
