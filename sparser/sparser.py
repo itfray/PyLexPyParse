@@ -1,5 +1,5 @@
-from .isparser import ISParser, ILexer, Node, \
-                      SParserError, NoneLexerError
+from lexer import ILexer
+from .isparser import ISParser, Node, SParserError, NoneLexerError
 
 
 class Rule:
@@ -520,12 +520,12 @@ class CellSParseTab:
     ACC: int                                            # accept
     RUL: int                                            # apply rule
     SHF: int                                            # shift
-    EMP, ACC, RUL, SHF = range(0, 4)                    # values of cell action
+    EMP, ACC, RUL, SHF = range(-1, 3)                   # values of cell action
     action: int                                         # cell action
     value: int                                          # cell value
     def __init__(self, **kwargs):
         self.action = kwargs.get("action", self.EMP)
-        self.value = kwargs.get("value", 0)
+        self.value = kwargs.get("value", self.EMP)
 
     def __str__(self):
         cond =  True
@@ -536,9 +536,11 @@ class CellSParseTab:
             ans = 'r'
         elif self.action == self.SHF:
             ans = 's'
+        elif self.action == self.EMP:
+            ans = ''
+            cond = self.value != self.EMP
         else:
             ans = ''
-            cond = self.value != 0
         if cond: ans += str(self.value)
         return ans
 
@@ -716,6 +718,36 @@ class SParser(ISParser):
             raise NoneLexerError("Lexer is None!!!")
         if self.sparse_tab is None:
             raise NoneSParseTabErr("Parsing table is None!!!")
+        st_stack = [0]
+        buf = []
+        root = None
+        for token in lexer.tokens():
+            symbol = token.kind if token.kind in self.tokens else\
+                     f"'{token.value}'"
+            cell = self.sparse_tab.cell_hdr(st_stack[-1], symbol)
+            if cell.action == cell.SHF:
+                st_stack.append(cell.value)
+                buf.append(Node(value=token))
+            elif cell.action == cell.RUL:
+                rule = self.__rules[cell.value]
+                ibuf = len(buf) - len(rule.value) - 1
+                node = Node()
+                for i in range(len(rule.value)):
+                    child = buf.pop(ibuf)
+                    child.parent = node
+                    node.childs.append(child)
+                    st_stack.pop(0)
+                cell = self.sparse_tab.cell_hdr(st_stack[-1], rule.key)
+                if cell.action == cell.EMP and cell.value != cell.EMP:
+                    st_stack.append(cell.value)
+                else:
+                    raise ValueError(f"Unexcepted lexeme '{token.value}'")
+            elif cell.action == cell.ACC:
+                root = buf[-1]
+                break
+            else:
+                raise ValueError(f"Unexcepted lexeme '{token.value}'")
+        return root
 
     def is_terminal(self, value: str)-> bool:
         """
