@@ -2,6 +2,27 @@ from lexer import ILexer
 from .isparser import ISParser, Node, SParserError, NoneLexerError
 
 
+def merge_ranges(*rngs):
+    """
+    Merge ranges
+    :param rngs: list of ranges
+    :return: value from range
+    """
+    for rng in rngs:
+        for e in rng:
+            yield e
+
+
+def range_strs(*strs):
+    """
+    Create range of string
+    :param strs: list of strings
+    :return: string from list of strings
+    """
+    for s in strs:
+        yield s
+
+
 class Rule:
     """
     Rule is rule of grammar of language
@@ -516,19 +537,22 @@ class CellSParseTab:
     """
     CellSParseTab is cell for SParse table
     """
-    EMP: int                                            # empty
-    ACC: int                                            # accept
-    RUL: int                                            # apply rule
-    SHF: int                                            # shift
-    EMP, ACC, RUL, SHF = range(-1, 3)                   # values of cell action
+    vERR: int                                           # error value
+    EMP: int                                            # empty action
+    ACC: int                                            # accept action
+    RUL: int                                            # apply rule action
+    SHF: int                                            # shift action
+    EMP, ACC, RUL, SHF = range(0, 4)                    # values of cell action
+    vERR = -1                                           # values of cell value
     action: int                                         # cell action
     value: int                                          # cell value
     def __init__(self, **kwargs):
         self.action = kwargs.get("action", self.EMP)
-        self.value = kwargs.get("value", self.EMP)
+        self.value = kwargs.get("value", self.vERR)
 
     def __str__(self):
         cond =  True
+        cond = self.value != self.vERR
         if self.action == self.ACC:
             ans = 'acc'
             cond = False
@@ -538,10 +562,10 @@ class CellSParseTab:
             ans = 's'
         elif self.action == self.EMP:
             ans = ''
-            cond = self.value != self.EMP
         else:
             ans = ''
-        if cond: ans += str(self.value)
+        if cond:
+            ans += str(self.value)
         return ans
 
     def __repr__(self):
@@ -721,32 +745,38 @@ class SParser(ISParser):
         st_stack = [0]
         buf = []
         root = None
-        for token in lexer.tokens():
-            symbol = token.kind if token.kind in self.tokens else\
-                     f"'{token.value}'"
-            cell = self.sparse_tab.cell_hdr(st_stack[-1], symbol)
-            if cell.action == cell.SHF:
-                st_stack.append(cell.value)
-                buf.append(Node(value=token))
-            elif cell.action == cell.RUL:
-                rule = self.__rules[cell.value]
-                ibuf = len(buf) - len(rule.value) - 1
-                node = Node()
-                for i in range(len(rule.value)):
-                    child = buf.pop(ibuf)
-                    child.parent = node
-                    node.childs.append(child)
-                    st_stack.pop(0)
-                cell = self.sparse_tab.cell_hdr(st_stack[-1], rule.key)
-                if cell.action == cell.EMP and cell.value != cell.EMP:
+        gen_token = merge_ranges(lexer.tokens(),
+                                 range_strs(self.end_term))
+        try:
+            token = next(gen_token)
+            while True:
+                symbol = token.kind if token.kind in self.tokens else \
+                    f"'{token.value}'"
+                cell = self.sparse_tab.cell_hdr(st_stack[-1], symbol)
+                if cell.action == cell.SHF:
                     st_stack.append(cell.value)
+                    buf.append(Node(value=token))
+                    token = next(gen_token)
+                elif cell.action == cell.RUL:
+                    rule = self.__rules[cell.value]
+                    ibuf = len(buf) - len(rule.value) - 1
+                    node = Node()
+                    for i in range(len(rule.value)):
+                        child = buf.pop(ibuf)
+                        child.parent = node
+                        node.childs.append(child)
+                        st_stack.pop(0)
+                    cell = self.sparse_tab.cell_hdr(st_stack[-1], rule.key)
+                    st_stack.append(cell.value)
+                elif cell.action == cell.ACC:
+                    root = buf[-1]
+                    token = next(gen_token)
+                    raise ValueError(f"Unexcepted lexeme '{token.value}'")
                 else:
                     raise ValueError(f"Unexcepted lexeme '{token.value}'")
-            elif cell.action == cell.ACC:
-                root = buf[-1]
-                break
-            else:
-                raise ValueError(f"Unexcepted lexeme '{token.value}'")
+        except StopIteration:
+            if root is None:
+                raise ValueError(f"Syntax error!!!")
         return root
 
     def is_terminal(self, value: str)-> bool:
