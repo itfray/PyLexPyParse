@@ -50,7 +50,10 @@ parser = SParser(lexer=lexer,
                  goal_nterm=GOAL_NTERM,
                  end_term=END_TERM)
 parser.parse_rules_from(RULES)
-parser.create_sparse_tab()
-print_sparse_tab(parser.sparse_tab, 10)
-node = parser.parse()
-print(node)
+
+from sparser.sparser import first_term
+print(first_term(parser.rules, parser.is_terminal, "F"))
+# parser.create_sparse_tab()
+# print_sparse_tab(parser.sparse_tab, 10)
+# node = parser.parse()
+# print(node)

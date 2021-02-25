@@ -316,19 +316,18 @@ def first_term(rules: list, terminal_func, value: str)-> list:
     ans = []                    # list of found terminal symbols
     queue = []
     queue.append(value)
-    # checked_rules = []
+    checked_rules = []
     while len(queue) > 0:       # breadth-first search (BFS)
         val = queue.pop(0)
         if terminal_func(val):
             ans.append(val)     # add terminal
         else:
             for rule in rules:
-                if rule.key == val:
-                # if rule.key == val and\
-                #    rule not in checked_rules:
+                if rule.key == val and\
+                   rule not in checked_rules:
                     if len(rule.value) > 0:
                         queue.append(rule.value[0])   # add new symbol for check
-                        # checked_rules.append(rule)
+                        checked_rules.append(rule)
     return ans
 
 def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
