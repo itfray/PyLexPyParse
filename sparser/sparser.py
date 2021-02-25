@@ -339,10 +339,12 @@ def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
     :param lrpoint: LR-point who need calulate set of CLOSURE(...)
     :return: list of LR-points for LR-state
     """
+    used_rules = []
     lrpoints = []                   # CLOSURE(...), list of LR-points
     queue = []
     lrpoints.append(lrpoint)
     queue.append(lrpoint)
+    used_rules.append(lrpoint.rule)
     while len(queue) > 0:           # breadth-first search (BFS)
         lrpoint = queue.pop(0)
         iptr = lrpoint.iptr
@@ -356,10 +358,12 @@ def closure_LR1(rules: list, terminal_func, lrpoint: LR1Point)-> list:
         if len(firstb) == 0:
             firstb += lrpoint.lookahead               # calculate FIRST(a)
         for rule in rules:
-            if B == rule.key:
+            if B == rule.key and\
+               rule not in used_rules:
                 lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)   # add rule [B -> ●γ, FIRST(βa)]
                 queue.append(lrp)
                 lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
+                used_rules.append(rule)
     return lrpoints
 
 def goto_LR1Point(lrpoints: list, value: str)-> LR1Point:
@@ -656,6 +660,23 @@ class SParseTab:
             return 0
 
 
+def print_sparse_tab(tab: SParseTab):
+    print('+' + ('-' * 6 + '+') * (len(tab.headers) + 1))
+    print(f"|{' ':^6}|", end="")
+    for hdr in tab.headers:
+        print(f"{str(hdr):^6}|", end="")
+    print()
+    print('+' + ('-'*6 + '+') * (len(tab.headers) + 1))
+    irow = 0
+    for row in tab._SParseTab__content:
+        print(f"|{str(irow):^6}|", end="")
+        for e in row:
+            print(f"{str(e):^6}|", end="")
+        print()
+        irow += 1
+    print('+' + ('-' * 6 + '+') * (len(tab.headers) + 1))
+
+
 def create_sparse_tab(rules: list, lrstates: list, term_func,
                       goal_nterm: str, end_term: str)-> SParseTab:
     """
@@ -738,14 +759,14 @@ class SParser(ISParser):
         Parses tokens and constructs parse tree
         :return: root of parse tree
         """
-        if lexer is None:
+        if self.lexer is None:
             raise NoneLexerError("Lexer is None!!!")
         if self.sparse_tab is None:
             raise NoneSParseTabErr("Parsing table is None!!!")
         st_stack = [0]
         buf = []
         root = None
-        gen_token = merge_ranges(lexer.tokens(),
+        gen_token = merge_ranges(self.lexer.tokens(),
                                  range_strs(self.end_term))
         try:
             token = next(gen_token)
@@ -926,3 +947,7 @@ if __name__ == "__main__":
     parser.parse_rules_from(RULES)
     parser.create_sparse_tab()
     print(parser.rules)
+    tab = parser.sparse_tab
+    print(f"count rows: {tab.rows}")
+    print(f"count cols: {tab.columns}")
+    print_sparse_tab(tab)
