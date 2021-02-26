@@ -867,7 +867,7 @@ class SParser(ISParser):
         lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
         lrstates = create_LR1States(ext_rules, self.is_terminal, lrpt)          # create LR1-states of LR1 state machine
         lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
-        self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,  # create parsing table
+        self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,              # create parsing table
                                               self.is_terminal,
                                               goal_nterm,
                                               self.end_term)
@@ -974,89 +974,89 @@ class SParser(ISParser):
                 index += 1
 
 
-if __name__ == "__main__":
-    print('start test1...')
-    GOAL_NTERM = "S"
-    END_TERM = '⊥'
-    RULES = """
-             S -> C C;
-             C -> c C |
-                  d
-            """
-    TOKENS = ('c', 'd')
-    parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-    parser.parse_rules(RULES)
-    parser.create_sparse_tab()
-    tab = parser._SParser__sparse_tab
-    print(f"count rows: {tab.rows}")
-    print(f"count cols: {tab.columns}")
-    print_sparse_tab(tab)
-    print("end test1...")
-
-    print()
-
-    print("start test2...")
-    GOAL_NTERM = "E"
-    END_TERM = '⊥'
-    RULES = """
-             E -> E '+' T |
-                  E '-' T |
-                  T;
-             T -> T '*' F |
-                  T '/' F |
-                  F;
-             F -> '(' E ')' |
-                  ID
-            """
-    TOKENS = ('ID',)
-    parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-    parser.parse_rules(RULES)
-    parser.create_sparse_tab()
-    tab = parser._SParser__sparse_tab
-    print(f"count rows: {tab.rows}")
-    print(f"count cols: {tab.columns}")
-    print_sparse_tab(tab)
-    print('end test2...')
-
-    """
-    ANSWERS:
-    
-    TEST1:
-    count rows: 7
-    count cols: 5
-    +------+------+------+------+------+------+
-    |      |  c   |  d   |  C   |  S   |  ⊥   |
-    +------+------+------+------+------+------+
-    |  0   |  s3  |  s4  |  2   |  1   |      |
-    |  1   |      |      |      |      | acc  |
-    |  2   |  s3  |  s4  |  5   |      |      |
-    |  3   |  s3  |  s4  |  6   |      |      |
-    |  4   |  r3  |  r3  |      |      |  r3  |
-    |  5   |      |      |      |      |  r1  |
-    |  6   |  r2  |  r2  |      |      |  r2  |
-    +------+------+------+------+------+------+
-    
-    TEST2:
-    count rows: 16
-    count cols: 11
-    +------+------+------+------+------+------+------+------+------+------+------+------+
-    |      |  T   |  ID  | '+'  | '-'  | '/'  | '('  | ')'  |  F   | '*'  |  E   |  ⊥   |
-    +------+------+------+------+------+------+------+------+------+------+------+------+
-    |  0   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  1   |      |
-    |  1   |      |      |  s6  |  s7  |      |      |      |      |      |      | acc  |
-    |  2   |      |      |      |      |  s9  |      |  r3  |      |  s8  |      |  r3  |
-    |  3   |      |      |      |      |      |      |  r6  |      |      |      |  r6  |
-    |  4   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  10  |      |
-    |  5   |      |      |      |      |      |      |  r8  |      |      |      |  r8  |
-    |  6   |  11  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
-    |  7   |  12  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
-    |  8   |      |  s5  |      |      |      |  s4  |      |  13  |      |      |      |
-    |  9   |      |  s5  |      |      |      |  s4  |      |  14  |      |      |      |
-    |  10  |      |      |  s6  |  s7  |      |      | s15  |      |      |      |      |
-    |  11  |      |      |      |      |  s9  |      |  r1  |      |  s8  |      |  r1  |
-    |  12  |      |      |      |      |  s9  |      |  r2  |      |  s8  |      |  r2  |
-    |  13  |      |      |      |      |      |      |  r4  |      |      |      |  r4  |
-    |  14  |      |      |      |      |      |      |  r5  |      |      |      |  r5  |
-    |  15  |      |      |      |      |      |      |  r7  |      |      |      |  r7  |
-    +------+------+------+------+------+------+------+------+------+------+------+------+
-    """
+# if __name__ == "__main__":
+#     print('start test1...')
+#     GOAL_NTERM = "S"
+#     END_TERM = '⊥'
+#     RULES = """
+#              S -> C C;
+#              C -> c C |
+#                   d
+#             """
+#     TOKENS = ('c', 'd')
+#     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
+#     parser.parse_rules(RULES)
+#     parser.create_sparse_tab()
+#     tab = parser._SParser__sparse_tab
+#     print(f"count rows: {tab.rows}")
+#     print(f"count cols: {tab.columns}")
+#     print_sparse_tab(tab)
+#     print("end test1...")
+#
+#     print()
+#
+#     print("start test2...")
+#     GOAL_NTERM = "E"
+#     END_TERM = '⊥'
+#     RULES = """
+#              E -> E '+' T |
+#                   E '-' T |
+#                   T;
+#              T -> T '*' F |
+#                   T '/' F |
+#                   F;
+#              F -> '(' E ')' |
+#                   ID
+#             """
+#     TOKENS = ('ID',)
+#     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
+#     parser.parse_rules(RULES)
+#     parser.create_sparse_tab()
+#     tab = parser._SParser__sparse_tab
+#     print(f"count rows: {tab.rows}")
+#     print(f"count cols: {tab.columns}")
+#     print_sparse_tab(tab)
+#     print('end test2...')
+#
+#     """
+#     ANSWERS:
+#
+#     TEST1:
+#     count rows: 7
+#     count cols: 5
+#     +------+------+------+------+------+------+
+#     |      |  c   |  d   |  C   |  S   |  ⊥   |
+#     +------+------+------+------+------+------+
+#     |  0   |  s3  |  s4  |  2   |  1   |      |
+#     |  1   |      |      |      |      | acc  |
+#     |  2   |  s3  |  s4  |  5   |      |      |
+#     |  3   |  s3  |  s4  |  6   |      |      |
+#     |  4   |  r3  |  r3  |      |      |  r3  |
+#     |  5   |      |      |      |      |  r1  |
+#     |  6   |  r2  |  r2  |      |      |  r2  |
+#     +------+------+------+------+------+------+
+#
+#     TEST2:
+#     count rows: 16
+#     count cols: 11
+#     +------+------+------+------+------+------+------+------+------+------+------+------+
+#     |      |  T   |  ID  | '+'  | '-'  | '/'  | '('  | ')'  |  F   | '*'  |  E   |  ⊥   |
+#     +------+------+------+------+------+------+------+------+------+------+------+------+
+#     |  0   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  1   |      |
+#     |  1   |      |      |  s6  |  s7  |      |      |      |      |      |      | acc  |
+#     |  2   |      |      |      |      |  s9  |      |  r3  |      |  s8  |      |  r3  |
+#     |  3   |      |      |      |      |      |      |  r6  |      |      |      |  r6  |
+#     |  4   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  10  |      |
+#     |  5   |      |      |      |      |      |      |  r8  |      |      |      |  r8  |
+#     |  6   |  11  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
+#     |  7   |  12  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
+#     |  8   |      |  s5  |      |      |      |  s4  |      |  13  |      |      |      |
+#     |  9   |      |  s5  |      |      |      |  s4  |      |  14  |      |      |      |
+#     |  10  |      |      |  s6  |  s7  |      |      | s15  |      |      |      |      |
+#     |  11  |      |      |      |      |  s9  |      |  r1  |      |  s8  |      |  r1  |
+#     |  12  |      |      |      |      |  s9  |      |  r2  |      |  s8  |      |  r2  |
+#     |  13  |      |      |      |      |      |      |  r4  |      |      |      |  r4  |
+#     |  14  |      |      |      |      |      |      |  r5  |      |      |      |  r5  |
+#     |  15  |      |      |      |      |      |      |  r7  |      |      |      |  r7  |
+#     +------+------+------+------+------+------+------+------+------+------+------+------+
+#     """
