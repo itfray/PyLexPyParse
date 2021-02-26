@@ -804,17 +804,19 @@ class SParser(ISParser):
                     token = next(gen_token)            # generate new token
                 elif cell.action == cell.RUL:
                     rule = self.__rules[cell.value]    # roll up by rule
-                    ibuf = len(buf) - len(rule.value)  # index of first element for roll up
-                    node = Node()
-                    for i in range(len(rule.value)):
-                        child = buf.pop(ibuf)
-                        child.parent = node
-                        node.childs.append(child)      # add elements as child nodes
+                    if len(rule.value) > 1:
+                        ibuf = len(buf) - len(rule.value)  # index of first element for roll up
+                        node = Node()
+                        for i in range(len(rule.value)):
+                            child = buf.pop(ibuf)
+                            child.parent = node
+                            node.childs.append(child)      # add elements as child nodes
+                            st_stack.pop(-1)
+                        buf.append(node)               # replace elements to new node
+                    else:
                         st_stack.pop(-1)
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
                     st_stack.append(cell.value)        # go to new state
-                    buf.append(node)                   # replace elements to new node
-                    node.name = rule.key
                 elif cell.action == cell.ACC:
                     root = buf[-1]                     # set root
                     token = next(gen_token)
