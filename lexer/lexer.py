@@ -1,4 +1,4 @@
-from .ilexer import (ILexer, Token, LexerError, UnexceptedLexemeError,
+from .ilexer import (ILexer, Token, LexerError, UnexceptedLexError,
                      NoneDataReaderError, IStrReader)
 import re
 
@@ -78,8 +78,9 @@ class Lexer(ILexer):
 
         if pos < len(data):
             self.__num_column += 1
-            raise UnexceptedLexemeError(f"Unexcepted character '{data[pos]}'" +
-                                        f" in line {self.__num_line} in column {self.__num_column}!!!")
+            msg = f"Unexcepted character '{data[pos]}'" + \
+                  f" in line {self.__num_line} in column {self.__num_column}!!!"
+            raise UnexceptedLexError(data[pos], self.__num_line, self.__num_column, msg)
 
     @property
     def num_line(self):

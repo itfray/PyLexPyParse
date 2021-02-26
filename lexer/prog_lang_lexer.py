@@ -1,4 +1,4 @@
-from .lexer import Lexer, UnexceptedLexemeError, NoneDataReaderError
+from .lexer import Lexer, UnexceptedLexError, NoneDataReaderError
 import re
 from collections import namedtuple
 
@@ -55,8 +55,9 @@ class ProgLangLexer(Lexer):
                     kind = token.kind
                     bounds = self.__multitokens[kind]                        # get bounds of multitoken
                     if token.value != bounds.start.value:
-                        raise UnexceptedLexemeError(f"Unexcepted character '{token.value}'" +
-                                                    f" in line {self.num_line} in column {self.num_column}!!!")
+                        msg = f"Unexcepted character '{token.value}'" + \
+                              f" in line {self.num_line} in column {self.num_column}!!!"
+                        raise UnexceptedLexError(token.value, self.num_line, self.num_column, msg)
                     yield token
                     self._Lexer__token_regex = self.__multiregexs[kind]      # set compiled regex for multitoken
                     while token.value != bounds.end.value:                   # get values of multitoken

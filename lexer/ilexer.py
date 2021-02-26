@@ -31,6 +31,37 @@ class ILexer(abc.ABC):
         """
 
     @property
+    def num_line(self):
+        """
+        Get number of current processed line
+        :return: number of line
+        """
+
+    @property
+    def num_column(self):
+        """
+        Get number of current processed column
+        :return: number of column
+        """
+
+    @property
+    @abc.abstractmethod
+    def size_read_data(self)-> int:
+        """
+        Get size read data
+        :return: size one portion of read data
+        """
+
+    @size_read_data.setter
+    @abc.abstractmethod
+    def size_read_data(self, value: int)-> None:
+        """
+        Set size read data
+        :param value: size one portion of read data
+        :return: None
+        """
+
+    @property
     @abc.abstractmethod
     def data_reader(self)-> IStrReader:
         """
@@ -65,10 +96,13 @@ class NoneDataReaderError(LexerError):
         super().__init__(*args)
 
 
-class UnexceptedLexemeError(LexerError):
+class UnexceptedLexError(LexerError):
     """
-     UnexceptedLexemeError is class of lexical errors for lexical analyzer ILexer.
+     UnexceptedLexError is class of lexical errors for lexical analyzer ILexer.
      Raise when Lexer meet unexcepted lexeme.
     """
-    def __init__(self, *args):
+    def __init__(self, data, num_line, num_column, *args):
         super().__init__(*args)
+        self.data = data
+        self.num_line = num_line
+        self.num_column = num_column

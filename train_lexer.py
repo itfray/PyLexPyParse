@@ -1,4 +1,4 @@
-from lexer import Token, ILexer, LexerError, UnexceptedLexemeError
+from lexer import Token, ILexer, LexerError, UnexceptedLexError
 from str_reader import IStrReader
 import enum
 
@@ -46,7 +46,6 @@ class Lexer(ILexer):
         if self.__data_reader is None:
             return
         self.__data_reader.reset()
-
         self.__num_line = 1
         self.__num_column = 1
         getch = self.__getch
@@ -120,7 +119,7 @@ class Lexer(ILexer):
                     state = LexerState.ERR
 
         if state == LexerState.ERR:
-            raise UnexceptedLexemeError("Unknown symbol: " + ch + f" in line {self.__num_line}:{self.__num_column}")
+            raise UnexceptedLexError("Unknown symbol: " + ch + f" in line {self.__num_line}:{self.__num_column}")
 
 
     @property

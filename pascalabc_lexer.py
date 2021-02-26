@@ -76,7 +76,7 @@ STR: r"
 
 if __name__ == "__main__":
     from str_reader.file_reader import FileStrReader
-    from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexemeError
+    from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from time import time
 
     filename = "pascal_code.pas"
@@ -95,6 +95,6 @@ if __name__ == "__main__":
     try:
         for token in lexer.tokens():
             print(f"{lexer.num_line}:{lexer.num_column}: {token}")
-    except UnexceptedLexemeError as err:
+    except UnexceptedLexError as err:
         print(err)
     print(time() - t0, " sec")
