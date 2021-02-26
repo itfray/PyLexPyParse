@@ -776,47 +776,53 @@ class SParser(ISParser):
             raise NoneLexerError("Lexer is None!!!")
         if self.__sparse_tab is None:
             raise NoneSParseTabErr("Parsing table is None!!!")
-        st_stack = [0]
-        buf = []
-        root = None
+
+        st_stack = [0]         # stack of states
+        buf = []               # buffer tokens and nodes
+        root = None            # root of parse tree
+        # create token generator
+        # add end terminal how end token
         gen_token = merge_ranges(self.lexer.tokens(),
                     range_objs(Token("", self.end_term)))
         try:
-            token = next(gen_token)
+            token = next(gen_token)                 # generate first token
             while True:
-                if token.kind in self.tokens:
-                    symbol = token.kind
+                if token.kind in self.tokens:       # transform token to term
+                    last_lexeme = token.value
+                    term = token.kind
                 elif token.value == self.end_term:
-                    symbol = token.value
+                    term = token.value
                 else:
-                    symbol = self.term_segreg[0] + \
-                             token.value +  self.term_segreg[-1]
-                cell = self.__sparse_tab.cell_hdr(st_stack[-1], symbol)
+                    last_lexeme = token.value
+                    term = self.term_segreg[0] + token.value + \
+                           self.term_segreg[-1]
+                # get cell of matrix of syntax analysis
+                cell = self.__sparse_tab.cell_hdr(st_stack[-1], term)
                 if cell.action == cell.SHF:
-                    st_stack.append(cell.value)
-                    buf.append(Node(value=token))
-                    token = next(gen_token)
+                    st_stack.append(cell.value)        # go to a new state
+                    buf.append(Node(value=token))      # shift token in buffer
+                    token = next(gen_token)            # generate new token
                 elif cell.action == cell.RUL:
-                    rule = self.__rules[cell.value]
-                    ibuf = len(buf) - len(rule.value)
+                    rule = self.__rules[cell.value]    # roll up by rule
+                    ibuf = len(buf) - len(rule.value)  # index of first element for roll up
                     node = Node()
                     for i in range(len(rule.value)):
                         child = buf.pop(ibuf)
                         child.parent = node
-                        node.childs.append(child)
+                        node.childs.append(child)      # add elements as child nodes
                         st_stack.pop(-1)
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
-                    st_stack.append(cell.value)
-                    buf.append(node)
+                    st_stack.append(cell.value)        # go to new state
+                    buf.append(node)                   # replace elements to new node
                     node.name = rule.key
                 elif cell.action == cell.ACC:
-                    root = buf[-1]
+                    root = buf[-1]                     # set root
                     token = next(gen_token)
-                    raise ValueError(f"Unexcepted lexeme '{token.value}'")
+                    raise ValueError(f"Unexcepted lexeme '{last_lexeme}'")
                 else:
-                    raise ValueError(f"Unexcepted lexeme '{token.value}'")
+                    raise ValueError(f"Unexcepted lexeme '{last_lexeme}'")
         except StopIteration:
-            if root is None:
+            if root is None:                           # root not defined
                 raise ValueError(f"Syntax error!!!")
         return root
 
