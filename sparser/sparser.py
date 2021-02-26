@@ -742,13 +742,15 @@ class NoneSParseTabErr(SParserError):
 
 
 class SParser(ISParser):
-    DEFAULT_GOAL_NTERM = ''          # default goal nterminal
-    DEFAULT_END_TERM = '⊥'           # default end terminal
-    __rules: list                    # rules of grammar
-    __tokens: tuple                  # tokens
-    goal_nterm: str                  # goal nterminal symbol
-    end_term: str                    # end terminal symbol
-    sparse_tab: SParseTab            # parsing table
+    DEFAULT_GOAL_NTERM = ''           # default goal nterminal
+    DEFAULT_END_TERM = '⊥'            # default end terminal
+    DEFAULT_TERM_SEGREG = ("'", "'")  # default terminal segregation
+    __rules: list                     # rules of grammar
+    __tokens: tuple                   # tokens
+    goal_nterm: str                   # goal nterminal symbol
+    end_term: str                     # end terminal symbol
+    __term_segreg: tuple              # terminal segregation
+    sparse_tab: SParseTab             # parsing table
 
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
@@ -756,6 +758,7 @@ class SParser(ISParser):
         self.tokens = kwargs.get("tokens", ())
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
+        self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
         self.sparse_tab = kwargs.get('sparse_tab', None)
 
     def parse(self) -> Node:
@@ -775,8 +778,13 @@ class SParser(ISParser):
         try:
             token = next(gen_token)
             while True:
-                symbol = token.kind if token.kind in self.tokens else \
-                    f"'{token.value}'"
+                if token.kind in self.tokens:
+                    symbol = token.kind
+                elif token.value == self.end_term:
+                    symbol = token.value
+                else:
+                    symbol = self.term_segreg[0] + \
+                             token.value +  self.term_segreg[-1]
                 cell = self.sparse_tab.cell_hdr(st_stack[-1], symbol)
                 if cell.action == cell.SHF:
                     st_stack.append(cell.value)
@@ -812,10 +820,13 @@ class SParser(ISParser):
         :param value: symbol for check
         :return: result of check
         """
-        if value in self.__tokens:
+        if value == self.end_term:
             return True
-        elif len(value) > 0 and value[0] == "'" \
-             and value[len(value) - 1] == "'":
+        elif value in self.__tokens:
+            return True
+        elif len(value) > 0 and\
+             value[0] == self.term_segreg[0] and\
+             value[-1] == self.term_segreg[-1]:
             return True
         else:
             return False
@@ -836,13 +847,13 @@ class SParser(ISParser):
             else:
                 return
         self.goal_nterm = rule.key
-        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[f"'{self.end_term}'"])  # create goal LR1-point
+        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])         # create goal LR1-point
         lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)     # create LR1-states of LR1 state machine
         lrstates = states_LR1_to_LALR1(lrstates)                              # transform LR1-states to LALR1-states
         self.sparse_tab = create_sparse_tab(self.__rules, lrstates,           # create parsing table
                                             self.is_terminal,
                                             self.goal_nterm,
-                                            f"'{self.end_term}'")
+                                            self.end_term)
 
     @property
     def lexer(self)-> ILexer:
@@ -860,6 +871,29 @@ class SParser(ISParser):
         :return: None
         """
         self.__lexer = value
+
+    @property
+    def term_segreg(self)-> tuple:
+        """
+        Get terminal segregation.
+        Terminal segregation need
+        that define terminal symbols.
+        Example: if term_segreg = ("'", "'")
+        then "'t'" is terminal symbol.
+        :return: tuple of symbols
+                 for terminal segregation
+        """
+        return self.__term_segreg
+
+    @term_segreg.setter
+    def term_segreg(self, value: tuple)-> None:
+        """
+        Set terminal segregation.
+        :param value: tuple of symbols
+                      for terminal segregation
+        :return: None
+        """
+        self.__term_segreg = tuple(value[i] for i in range(2))
 
     @property
     def tokens(self)-> tuple:
