@@ -765,6 +765,9 @@ class SParser(ISParser):
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
         self.__ext_rules = []
+        specification = kwargs.get("parsing_of_rules", None)
+        if not specification is None:
+            self.parse_rules(specification)
 
     def parse(self) -> Node:
         """
@@ -859,7 +862,7 @@ class SParser(ISParser):
         lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
         self.sparse_tab = create_sparse_tab(self.__ext_rules, lrstates,         # create parsing table
                                             self.is_terminal,
-                                            self.goal_nterm,
+                                            goal_nterm,
                                             self.end_term)
 
     @property
@@ -936,7 +939,7 @@ class SParser(ISParser):
             ind_rule.index = index
             self.__rules.append(ind_rule)
 
-    def parse_rules_from(self, specification: str)-> None:
+    def parse_rules(self, specification: str)-> None:
         """
         Parses and sets rules of grammar.
         :param specification: string of grammar rules
@@ -957,17 +960,16 @@ class SParser(ISParser):
 
 if __name__ == "__main__":
     print('start test1...')
-    GOAL_NTERM = "S'"
+    GOAL_NTERM = "S"
     END_TERM = '⊥'
     RULES = """
-             S' -> S;
              S -> C C;
              C -> c C |
                   d
             """
     TOKENS = ('c', 'd')
     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-    parser.parse_rules_from(RULES)
+    parser.parse_rules(RULES)
     parser.create_sparse_tab()
     tab = parser.sparse_tab
     print(f"count rows: {tab.rows}")
@@ -978,10 +980,9 @@ if __name__ == "__main__":
     print()
 
     print("start test2...")
-    GOAL_NTERM = "E'"
+    GOAL_NTERM = "E"
     END_TERM = '⊥'
     RULES = """
-             E' -> E;
              E -> E '+' T |
                   E '-' T |
                   T;
@@ -993,7 +994,7 @@ if __name__ == "__main__":
             """
     TOKENS = ('ID',)
     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-    parser.parse_rules_from(RULES)
+    parser.parse_rules(RULES)
     parser.create_sparse_tab()
     tab = parser.sparse_tab
     print(f"count rows: {tab.rows}")
