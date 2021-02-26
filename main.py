@@ -47,8 +47,8 @@ TOKENS = ('ID',)
 parser = SParser(lexer=lexer,
                  tokens=TOKENS,
                  goal_nterm=GOAL_NTERM,
-                 end_term=END_TERM)
-parser.parse_rules(RULES)
+                 end_term=END_TERM,
+                 parsing_of_rules=RULES)
 parser.create_sparse_tab()
 print_sparse_tab(parser.sparse_tab, 5)
 node = parser.parse()

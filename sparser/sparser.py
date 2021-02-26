@@ -72,7 +72,7 @@ class IndRule(Rule):
     index: int                        # index of rule
     def __init__(self, key, *value):
         super().__init__(key, *value)
-        index = 0
+        self.index = 0
 
 
 class LR0Point:
@@ -747,7 +747,6 @@ class SParser(ISParser):
     DEFAULT_GOAL_NTERM = ''           # default goal nterminal
     DEFAULT_END_TERM = '⊥'            # default end terminal
     __rules: list                     # rules of grammar
-    __ext_rules: list                 # rules of extended grammar
     __tokens: tuple                   # tokens
     __term_segreg: tuple              # terminal segregation
     __ext_goal_sign: str              # sign for designation extended goal
@@ -757,14 +756,13 @@ class SParser(ISParser):
 
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
-        self.set_rules(kwargs.get("rules", []))
+        self.rules = kwargs.get("rules", [])
         self.tokens = kwargs.get("tokens", ())
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
         self.sparse_tab = kwargs.get('sparse_tab', None)
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
-        self.__ext_rules = []
         specification = kwargs.get("parsing_of_rules", None)
         if not specification is None:
             self.parse_rules(specification)
@@ -799,7 +797,7 @@ class SParser(ISParser):
                     buf.append(Node(value=token))
                     token = next(gen_token)
                 elif cell.action == cell.RUL:
-                    rule = self.__ext_rules[cell.value]
+                    rule = self.__rules[cell.value]
                     ibuf = len(buf) - len(rule.value)
                     node = Node()
                     for i in range(len(rule.value)):
@@ -856,11 +854,12 @@ class SParser(ISParser):
                 return
         goal_nterm = rule.key + self.__ext_goal_sign
         goal_rule = IndRule(goal_nterm, rule.key)
-        self.__ext_rules = [goal_rule] + self.__rules.copy()                    # create extended grammar
+        goal_rule.index = -1
+        ext_rules = [goal_rule] + self.__rules.copy()                           # create extended grammar
         lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
-        lrstates = create_LR1States(self.__ext_rules, self.is_terminal, lrpt)   # create LR1-states of LR1 state machine
+        lrstates = create_LR1States(ext_rules, self.is_terminal, lrpt)          # create LR1-states of LR1 state machine
         lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
-        self.sparse_tab = create_sparse_tab(self.__ext_rules, lrstates,         # create parsing table
+        self.sparse_tab = create_sparse_tab(ext_rules, lrstates,                # create parsing table
                                             self.is_terminal,
                                             goal_nterm,
                                             self.end_term)
@@ -924,7 +923,16 @@ class SParser(ISParser):
             raise ValueError("Rules must be not None!!!")
         self.__tokens = value
 
-    def set_rules(self, value: list)-> None:
+    @property
+    def rules(self)-> list:
+        """
+        Get rules of grammar.
+        :return: list of grammar rules
+        """
+        return [Rule(rule.key, *rule.value) for rule in self.__rules]
+
+    @rules.setter
+    def rules(self, value: list)-> None:
         """
         Set rules of grammar.
         :param value: list of grammar rules
@@ -933,7 +941,7 @@ class SParser(ISParser):
         if value is None:
             raise ValueError("Rules must be not None!!!")
         self.__rules = []
-        index = 1
+        index = 0
         for rule in value:
             ind_rule = IndRule(rule.key, *rule.value)
             ind_rule.index = index
@@ -946,7 +954,7 @@ class SParser(ISParser):
         :return: None
         """
         self.__rules = []
-        index = 1
+        index = 0
         for requir in specification.split(';\n'):
             key, values = requir.split('->', 1)
             key = key.strip()
