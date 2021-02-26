@@ -343,8 +343,8 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
     :return: list of LR-points for LR-state
     """
     lrpoints = []                   # CLOSURE(...), list of LR-points
-    queue = []
-    for lrpoint in entry_lrps:
+    queue = []                      # processing queue
+    for lrpoint in entry_lrps:      # add all entry LR-points
         lrpoints.append(lrpoint)
         queue.append(lrpoint)
     while len(queue) > 0:           # breadth-first search (BFS)
@@ -361,15 +361,17 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
             firstb += lrpoint.lookahead               # calculate FIRST(a)
         for rule in rules:
             if B == rule.key:
-                lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)   # add rule [B -> ●γ, FIRST(βa)]
-                add_flag = True
-                for clrp in lrpoints:
-                    if clrp.rule == lrp.rule and\
-                       clrp.iptr == lrp.iptr:
-                        add_flag = False
-                if add_flag:
-                    queue.append(lrp)
-                    lrpoints.append(lrp)                  # add rule [B -> ●γ, b]
+                new_lrp = LR1Point(rule=rule, iptr=0,
+                                   lookahead=firstb)      # add rule [B -> ●γ, FIRST(βa)]
+                in_lrpoints = False                       # lrpoints have new_lrp already?
+                for lrp in lrpoints:
+                    if new_lrp.rule == lrp.rule and\
+                       new_lrp.iptr == lrp.iptr:
+                        in_lrpoints = True
+                        break
+                if not in_lrpoints:                       # if lrpoints not have new_lrp
+                    queue.append(new_lrp)
+                    lrpoints.append(new_lrp)              # add rule [B -> ●γ, b]
     return lrpoints
 
 def goto_LR1Point(lrpoints: list, value: str)-> list:
@@ -384,7 +386,7 @@ def goto_LR1Point(lrpoints: list, value: str)-> list:
     :param terminal_func: predicate for definition terminal symbols
     :param lrpoints: list of LR1-points
     :param value: symbol for transition
-    :return: list of goto LR1-points
+    :return: list of GOTO LR1-points
     """
     goto_lrps = []
     for lrpoint in lrpoints:                # check all LR-points
@@ -403,48 +405,45 @@ def create_LR1States(rules: list, term_func, start_lrp: LR1Point)-> list:
     Create all LR-states of LR state machine by LR-point with goal symbol
     :param rules: rules of grammar
     :param term_func: predicate for definition terminal symbols
-    :param lrpoint: LR1-point who need calulate LR-states
+    :param start_lrp: LR1-point who need calulate LR-states
     :return: list of all LR-states of LR state machine
     """
     index = 0
     lrpts = [start_lrp]
-    lrst = LRState(index=index)                             # LR-state I0
+    lrst = LRState(index=index)                            # LR-state I0
     lrst.lrpoints = closure_LR1(rules, term_func, lrpts)   # calculate CLOSURE(I0)
-    used_lrsts = []
-    lrstates = []                         # all LR-states
-    queue = []
-    lrstates.append(lrst)                 # add I0
+    created_lrsts = []     # all created LR-states and LR-points with that they were created
+    queue = []                            # queue of LR-states processing
     queue.append((lrpts, lrst))           # add I0 for processing
-    used_lrsts.append((lrpts, lrst))
+    created_lrsts.append((lrpts, lrst))   # add I0 how created
     while len(queue) > 0:
-        curr_lrps, curr_lrst = queue.pop(0)
+        _, curr_lrst = queue.pop(0)
         for lrpoint in curr_lrst.lrpoints:
             rule = lrpoint.rule
             iptr = lrpoint.iptr
             if iptr < 0 or iptr > len(rule.value) - 1:      # if after ● there is a symbol
                 continue
             B = rule.value[iptr]
-            new_lrps = goto_LR1Point(curr_lrst.lrpoints, B)  # get LR1-point fot GOTO-transition
+            new_lrps = goto_LR1Point(curr_lrst.lrpoints, B)  # get LR1-points for GOTO-transition
             if len(new_lrps) == 0:
                 continue
             new_lrst = None
-            for lrps, lrst in used_lrsts:     # find LR-state for GOTO LR-point
+            for lrps, lrst in created_lrsts:      # find LR-state by GOTO LR-points
                 if lrps == new_lrps:              # if LR-state is already created
                     new_lrps = lrps
                     new_lrst = lrst
                     break
-            if new_lrst is None:                # create new LR-state
+            if new_lrst is None:                  # create new LR-state
                 index += 1
                 new_lrst = LRState(index=index)
                 new_lrst.lrpoints = closure_LR1(rules, term_func, new_lrps)
-                used_lrsts.append((new_lrps, new_lrst))
+                created_lrsts.append((new_lrps, new_lrst))  # add Ii how created
                 queue.append((new_lrps, new_lrst))          # add Ii for processing
-                lrstates.append(new_lrst)                  # add Ii
-            curr_lrst.goto[B] = new_lrst                   # set transition
-            refs = new_lrst.rgoto.get(B, [])               # set reverse transition
+            curr_lrst.goto[B] = new_lrst              # set transition
+            refs = new_lrst.rgoto.get(B, [])          # set reverse transition
             refs.append(curr_lrst)
             new_lrst.rgoto[B] = refs
-    return lrstates
+    return [lrst for _, lrst in created_lrsts]        # return list of LR-states
 
 def can_merge_LR1_states(lrst1: LRState, lrst2: LRState)-> bool:
     """
