@@ -791,7 +791,7 @@ class SParser(ISParser):
                     token = next(gen_token)
                 elif cell.action == cell.RUL:
                     rule = self.__rules[cell.value]
-                    ibuf = len(buf) - len(rule.value) - 1
+                    ibuf = len(buf) - len(rule.value)
                     node = Node()
                     for i in range(len(rule.value)):
                         child = buf.pop(ibuf)
