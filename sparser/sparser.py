@@ -361,17 +361,10 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
             firstb += lrpoint.lookahead               # calculate FIRST(a)
         for rule in rules:
             if B == rule.key:
-                new_lrp = LR1Point(rule=rule, iptr=0,
-                                   lookahead=firstb)      # add rule [B -> ●γ, FIRST(βa)]
-                in_lrpoints = False                       # lrpoints have new_lrp already?
-                for lrp in lrpoints:
-                    if new_lrp.rule == lrp.rule and\
-                       new_lrp.iptr == lrp.iptr:
-                        in_lrpoints = True
-                        break
-                if not in_lrpoints:                       # if lrpoints not have new_lrp
+                new_lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)  # add rule [B -> ●γ, FIRST(βa)]
+                if new_lrp not in lrpoints:                              # if lrpoints not have new_lrp
                     queue.append(new_lrp)
-                    lrpoints.append(new_lrp)              # add rule [B -> ●γ, b]
+                    lrpoints.append(new_lrp)          # add rule [B -> ●γ, b]
     return lrpoints
 
 def goto_LR1Point(lrpoints: list, value: str)-> list:
