@@ -742,24 +742,29 @@ class NoneSParseTabErr(SParserError):
 
 
 class SParser(ISParser):
+    DEFAULT_TERM_SEGREG = ("'", "'")  # default terminal segregation
+    DEFAULT_EXT_GOAL_SIGN = "'"       # default sign for designation extended goal
     DEFAULT_GOAL_NTERM = ''           # default goal nterminal
     DEFAULT_END_TERM = '⊥'            # default end terminal
-    DEFAULT_TERM_SEGREG = ("'", "'")  # default terminal segregation
     __rules: list                     # rules of grammar
+    __ext_rules: list                 # rules of extended grammar
     __tokens: tuple                   # tokens
+    __term_segreg: tuple              # terminal segregation
+    __ext_goal_sign: str              # sign for designation extended goal
     goal_nterm: str                   # goal nterminal symbol
     end_term: str                     # end terminal symbol
-    __term_segreg: tuple              # terminal segregation
     sparse_tab: SParseTab             # parsing table
 
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
-        self.rules = kwargs.get("rules", [])
+        self.set_rules(kwargs.get("rules", []))
         self.tokens = kwargs.get("tokens", ())
-        self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
-        self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
         self.sparse_tab = kwargs.get('sparse_tab', None)
+        self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
+        self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
+        self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
+        self.__ext_rules = []
 
     def parse(self) -> Node:
         """
@@ -791,7 +796,7 @@ class SParser(ISParser):
                     buf.append(Node(value=token))
                     token = next(gen_token)
                 elif cell.action == cell.RUL:
-                    rule = self.__rules[cell.value]
+                    rule = self.__ext_rules[cell.value]
                     ibuf = len(buf) - len(rule.value)
                     node = Node()
                     for i in range(len(rule.value)):
@@ -824,7 +829,7 @@ class SParser(ISParser):
             return True
         elif value in self.__tokens:
             return True
-        elif len(value) > 0 and\
+        elif len(value) > 2 and\
              value[0] == self.term_segreg[0] and\
              value[-1] == self.term_segreg[-1]:
             return True
@@ -846,11 +851,13 @@ class SParser(ISParser):
                 rule = self.__rules[0]
             else:
                 return
-        self.goal_nterm = rule.key
-        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])         # create goal LR1-point
-        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)     # create LR1-states of LR1 state machine
-        lrstates = states_LR1_to_LALR1(lrstates)                              # transform LR1-states to LALR1-states
-        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,           # create parsing table
+        goal_nterm = rule.key + self.__ext_goal_sign
+        goal_rule = IndRule(goal_nterm, rule.key)
+        self.__ext_rules = [goal_rule] + self.__rules.copy()                    # create extended grammar
+        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
+        lrstates = create_LR1States(self.__ext_rules, self.is_terminal, lrpt)   # create LR1-states of LR1 state machine
+        lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
+        self.sparse_tab = create_sparse_tab(self.__ext_rules, lrstates,         # create parsing table
                                             self.is_terminal,
                                             self.goal_nterm,
                                             self.end_term)
@@ -914,25 +921,20 @@ class SParser(ISParser):
             raise ValueError("Rules must be not None!!!")
         self.__tokens = value
 
-    @property
-    def rules(self)-> list:
+    def set_rules(self, value: list)-> None:
         """
-        Get rules of grammar as
-        [Rule(key='...', value=(val1, val2, ...)), ...]
-        :return:
-        """
-        return self.__rules
-
-    @rules.setter
-    def rules(self, value: tuple)-> None:
-        """
-        Sets rules of grammar.
+        Set rules of grammar.
         :param value: list of grammar rules
         :return: None
         """
         if value is None:
             raise ValueError("Rules must be not None!!!")
-        self.__rules = value
+        self.__rules = []
+        index = 1
+        for rule in value:
+            ind_rule = IndRule(rule.key, *rule.value)
+            ind_rule.index = index
+            self.__rules.append(ind_rule)
 
     def parse_rules_from(self, specification: str)-> None:
         """
@@ -940,24 +942,8 @@ class SParser(ISParser):
         :param specification: string of grammar rules
         :return: None
         """
-        self.__rules = self.parse_rules(specification)
-
-    @staticmethod
-    def parse_rules(specification: str)-> list:
-        """
-        Parses and sets rules of grammar.
-        from:   key1 -> val1 val2 ... |
-                        val1 val2 ... |
-                        ...;
-                key2 -> val1 val2 ... |
-                        val1 val2 ... |
-                        ...;
-        to: (Rule(key='...', value=(val1, val2, ...)), ...)
-        :param specification: string of grammar rules
-        :return: None
-        """
-        rules = []
-        index = 0
+        self.__rules = []
+        index = 1
         for requir in specification.split(';\n'):
             key, values = requir.split('->', 1)
             key = key.strip()
@@ -965,9 +951,8 @@ class SParser(ISParser):
             for value in values:
                 rule = IndRule(key, *[val for val in value.strip().split(' ')])
                 rule.index = index
-                rules.append(rule)
+                self.__rules.append(rule)
                 index += 1
-        return rules
 
 
 if __name__ == "__main__":
