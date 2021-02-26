@@ -65,3 +65,15 @@ class NoneLexerError(SParserError):
     """
     def __init__(self, *args):
         super().__init__(*args)
+
+
+class ParseSyntaxError(SParserError):
+    """
+     ParseSyntaxError is class of errors for syntax analyzer IParser.
+     Raise when sparser gets error in syntax analyze.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(kwargs.get("message", ""))
+        self.lexeme = kwargs.get("lexeme", "")
+        self.num_line = kwargs.get("num_line", -1)
+        self.num_column = kwargs.get("num_column", -1)

@@ -46,23 +46,6 @@ class ILexer(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def size_read_data(self)-> int:
-        """
-        Get size read data
-        :return: size one portion of read data
-        """
-
-    @size_read_data.setter
-    @abc.abstractmethod
-    def size_read_data(self, value: int)-> None:
-        """
-        Set size read data
-        :param value: size one portion of read data
-        :return: None
-        """
-
-    @property
-    @abc.abstractmethod
     def data_reader(self)-> IStrReader:
         """
         Property for work with string data reader
