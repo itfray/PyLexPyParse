@@ -52,5 +52,5 @@ parser = SParser(lexer=lexer,
 parser.parse_rules_from(RULES)
 parser.create_sparse_tab()
 print_sparse_tab(parser.sparse_tab, 5)
-# node = parser.parse()
-# print(node)
+node = parser.parse()
+print(node)

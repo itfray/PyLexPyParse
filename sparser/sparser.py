@@ -1,4 +1,4 @@
-from lexer import ILexer
+from lexer import ILexer, Token
 from .isparser import ISParser, Node, SParserError, NoneLexerError
 
 
@@ -13,14 +13,14 @@ def merge_ranges(*rngs):
             yield e
 
 
-def range_strs(*strs):
+def range_objs(*objs):
     """
-    Create range of string
-    :param strs: list of strings
-    :return: string from list of strings
+    Create range of objects
+    :param objs: list of objects
+    :return: string from list of objects
     """
-    for s in strs:
-        yield s
+    for obj in objs:
+        yield obj
 
 
 class Rule:
@@ -771,7 +771,7 @@ class SParser(ISParser):
         buf = []
         root = None
         gen_token = merge_ranges(self.lexer.tokens(),
-                                 range_strs(self.end_term))
+                    range_objs(Token("", self.end_term)))
         try:
             token = next(gen_token)
             while True:
@@ -790,9 +790,11 @@ class SParser(ISParser):
                         child = buf.pop(ibuf)
                         child.parent = node
                         node.childs.append(child)
-                        st_stack.pop(0)
+                        st_stack.pop(-1)
                     cell = self.sparse_tab.cell_hdr(st_stack[-1], rule.key)
                     st_stack.append(cell.value)
+                    buf.append(node)
+                    node.name = rule.key
                 elif cell.action == cell.ACC:
                     root = buf[-1]
                     token = next(gen_token)
@@ -815,8 +817,6 @@ class SParser(ISParser):
         elif len(value) > 0 and value[0] == "'" \
              and value[len(value) - 1] == "'":
             return True
-        elif value == self.end_term:
-            return True
         else:
             return False
 
@@ -836,13 +836,13 @@ class SParser(ISParser):
             else:
                 return
         self.goal_nterm = rule.key
-        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
-        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)  # create LR1-states of LR1 state machine
-        lrstates = states_LR1_to_LALR1(lrstates)                           # transform LR1-states to LALR1-states
-        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,        # create parsing table
+        lrpt = LR1Point(rule=rule, iptr=0, lookahead=[f"'{self.end_term}'"])  # create goal LR1-point
+        lrstates = create_LR1States(self.__rules, self.is_terminal, lrpt)     # create LR1-states of LR1 state machine
+        lrstates = states_LR1_to_LALR1(lrstates)                              # transform LR1-states to LALR1-states
+        self.sparse_tab = create_sparse_tab(self.__rules, lrstates,           # create parsing table
                                             self.is_terminal,
                                             self.goal_nterm,
-                                            self.end_term)
+                                            f"'{self.end_term}'")
 
     @property
     def lexer(self)-> ILexer:
