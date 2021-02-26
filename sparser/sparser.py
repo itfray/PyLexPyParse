@@ -752,20 +752,20 @@ class SParser(ISParser):
     __ext_goal_sign: str              # sign for designation extended goal
     goal_nterm: str                   # goal nterminal symbol
     end_term: str                     # end terminal symbol
-    sparse_tab: SParseTab             # parsing table
+    __sparse_tab: SParseTab           # parsing table
 
     def __init__(self, **kwargs):
         self.lexer = kwargs.get("lexer", None)
         self.rules = kwargs.get("rules", [])
         self.tokens = kwargs.get("tokens", ())
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
-        self.sparse_tab = kwargs.get('sparse_tab', None)
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
         specification = kwargs.get("parsing_of_rules", None)
         if not specification is None:
             self.parse_rules(specification)
+        self.__sparse_tab = None
 
     def parse(self) -> Node:
         """
@@ -774,7 +774,7 @@ class SParser(ISParser):
         """
         if self.lexer is None:
             raise NoneLexerError("Lexer is None!!!")
-        if self.sparse_tab is None:
+        if self.__sparse_tab is None:
             raise NoneSParseTabErr("Parsing table is None!!!")
         st_stack = [0]
         buf = []
@@ -791,7 +791,7 @@ class SParser(ISParser):
                 else:
                     symbol = self.term_segreg[0] + \
                              token.value +  self.term_segreg[-1]
-                cell = self.sparse_tab.cell_hdr(st_stack[-1], symbol)
+                cell = self.__sparse_tab.cell_hdr(st_stack[-1], symbol)
                 if cell.action == cell.SHF:
                     st_stack.append(cell.value)
                     buf.append(Node(value=token))
@@ -805,7 +805,7 @@ class SParser(ISParser):
                         child.parent = node
                         node.childs.append(child)
                         st_stack.pop(-1)
-                    cell = self.sparse_tab.cell_hdr(st_stack[-1], rule.key)
+                    cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
                     st_stack.append(cell.value)
                     buf.append(node)
                     node.name = rule.key
@@ -859,10 +859,10 @@ class SParser(ISParser):
         lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
         lrstates = create_LR1States(ext_rules, self.is_terminal, lrpt)          # create LR1-states of LR1 state machine
         lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
-        self.sparse_tab = create_sparse_tab(ext_rules, lrstates,                # create parsing table
-                                            self.is_terminal,
-                                            goal_nterm,
-                                            self.end_term)
+        self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,  # create parsing table
+                                              self.is_terminal,
+                                              goal_nterm,
+                                              self.end_term)
 
     @property
     def lexer(self)-> ILexer:
@@ -979,7 +979,7 @@ if __name__ == "__main__":
     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
     parser.parse_rules(RULES)
     parser.create_sparse_tab()
-    tab = parser.sparse_tab
+    tab = parser._SParser__sparse_tab
     print(f"count rows: {tab.rows}")
     print(f"count cols: {tab.columns}")
     print_sparse_tab(tab)
@@ -1004,7 +1004,7 @@ if __name__ == "__main__":
     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
     parser.parse_rules(RULES)
     parser.create_sparse_tab()
-    tab = parser.sparse_tab
+    tab = parser._SParser__sparse_tab
     print(f"count rows: {tab.rows}")
     print(f"count cols: {tab.columns}")
     print_sparse_tab(tab)

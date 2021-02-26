@@ -1,6 +1,6 @@
 from str_reader.str_reader import StrReader
 from lexer.prog_lang_lexer import ProgLangLexer
-from sparser.sparser import SParser, print_sparse_tab
+from sparser.sparser import SParser, print_sparse_tab, Rule
 from time import time
 
 
@@ -50,6 +50,5 @@ parser = SParser(lexer=lexer,
                  end_term=END_TERM,
                  parsing_of_rules=RULES)
 parser.create_sparse_tab()
-print_sparse_tab(parser.sparse_tab, 5)
 node = parser.parse()
 print(node)
