@@ -756,17 +756,17 @@ class SParser(ISParser):
     __sparse_tab: SParseTab           # parsing table
 
     def __init__(self, **kwargs):
+        self.__sparse_tab = None
         self.lexer = kwargs.get("lexer", None)
-        self.rules = kwargs.get("rules", [])
         self.tokens = kwargs.get("tokens", ())
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
+        self.rules = kwargs.get("rules", [])
         specification = kwargs.get("parsing_of_rules", None)
-        if not specification is None:
+        if not specification is None and len(self.__rules) == 0:
             self.parse_rules(specification)
-        self.__sparse_tab = None
 
     def parse(self) -> Node:
         """
