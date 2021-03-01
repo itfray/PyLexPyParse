@@ -2,9 +2,14 @@
 GOAL_NTERM = "program"
 END_TERM = '⊥'
 RULES = """
-         program -> block;
-         block -> stmts;
-         stmts -> stmt;
+         E -> E '+' T |
+              E '-' T |
+              T;
+         T -> T '*' F |
+              T '/' F |
+              F;
+         F -> '(' E ')' |
+              ID
         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
@@ -23,7 +28,9 @@ if __name__ == "__main__":
 
 #    code_filename = "pascal_code.pas"
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
-    stmt = """"""
+    stmt = """
+           A + B * D *
+           """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
                           specification=SPECIFICATION,
