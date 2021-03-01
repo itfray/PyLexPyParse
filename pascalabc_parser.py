@@ -29,7 +29,7 @@ if __name__ == "__main__":
 #    code_filename = "pascal_code.pas"
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
     stmt = """
-           A + B * D *
+           A + B * D
            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,

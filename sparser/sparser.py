@@ -810,7 +810,8 @@ class SParser(ISParser):
         Parses tokens and constructs parse tree
         :return: root of parse tree
         :raises: NoneLexerError, NoneSParseTabErr,
-                EmptyRulesError, ParseSyntaxError
+                EmptyRulesError, ParseSyntaxError,
+                UncorrectSParseTabErr
         """
         if self.lexer is None:
             raise NoneLexerError("Lexer is None!!!")
@@ -849,9 +850,13 @@ class SParser(ISParser):
                 raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
                                        num_column=ncol_lex, message=msg)
             if cell.action == cell.SHF:
-                st_stack.append(cell.value)  # go to a new state
+                st_stack.append(cell.value)    # go to a new state
                 buf.append(Node(value=token))  # shift token in buffer
-                token = next(gen_token)  # generate new token
+                try:
+                    token = next(gen_token)        # generate new token
+                except StopIteration:
+                    raise UncorrectSParseTabErr(f"Last looked cell in the " +
+                                                f"SParseTable [{st_stack[-2]}]['{term}']")
             elif cell.action == cell.RUL:
                 rule = self.__rules[cell.value]  # roll up by rule
                 if len(rule.value) > 1:
