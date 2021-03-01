@@ -1,3 +1,4 @@
+from struct import pack, unpack
 from lexer import ILexer, Token
 from .isparser import (ISParser, Node, SParserError,
                        NoneLexerError, ParseSyntaxError)
@@ -30,7 +31,7 @@ class Rule:
     """
     key: str                             # key of rule, string
     __value: tuple                       # value of rule, set of strings
-    def __init__(self, key, *value):
+    def __init__(self, key = "", *value):
         self.key = key
         self.value = value
 
@@ -48,6 +49,7 @@ class Rule:
         Set value
         :param val: value, tuple of strings
         :return: None
+        :raise: ValueError
         """
         if val is None:
             raise ValueError("Value must be not is None!!!")
@@ -71,7 +73,7 @@ class IndRule(Rule):
     IndRule is rule of grammar of language with index
     """
     index: int                        # index of rule
-    def __init__(self, key, *value):
+    def __init__(self, key = "", *value):
         super().__init__(key, *value)
         self.index = 0
 
@@ -184,6 +186,7 @@ class LR1Point(LR0Point):
         Set list of terminal symbols of lookahead
         :param value: list of strings
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("Lookahead must be not is None!!!")
@@ -237,6 +240,7 @@ class LRState:
         Set LR-points
         :param value: list of LR-points
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("lrpoints must be not is None!!!")
@@ -258,6 +262,7 @@ class LRState:
         Set transitions in other states.
         :param value: dictionary of transitions
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("goto must be not is None!!!")
@@ -279,6 +284,7 @@ class LRState:
         Set reverse transitions in other states.
         :param value: dictionary of reverse transitions
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("rgoto must be not is None!!!")
@@ -735,25 +741,47 @@ def create_sparse_tab(rules: list, lrstates: list, term_func,
 
 class NoneSParseTabErr(SParserError):
     """
-     NoneSParseTabErr is class of errors for syntax analyzer SParser
+     NoneSParseTabErr is class of errors for syntax analyzer SParser.
      Raise when parser's parsing table not found (is None).
     """
     def __init__(self, *args):
         super().__init__(*args)
 
 
+class EmptyRulesError(SParserError):
+    """
+     EmptyRulesError is class of errors for syntax analyzer SParser.
+     Raise when parser's parsing rules not found (list rules is empty).
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
+class ReadingSTabFileErr(SParserError):
+    """
+     ReadingSTabFileErr is class of errors for syntax analyzer SParser.
+     Raise when happens reading error of file with SParseTable and rules.
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
 class SParser(ISParser):
-    DEFAULT_TERM_SEGREG = ("'", "'")  # default terminal segregation
-    DEFAULT_EXT_GOAL_SIGN = "'"       # default sign for designation extended goal
-    DEFAULT_GOAL_NTERM = ''           # default goal nterminal
-    DEFAULT_END_TERM = '⊥'            # default end terminal
-    __rules: list                     # rules of grammar
-    __tokens: tuple                   # tokens
-    __term_segreg: tuple              # terminal segregation
-    __ext_goal_sign: str              # sign for designation extended goal
-    goal_nterm: str                   # goal nterminal symbol
-    end_term: str                     # end terminal symbol
-    __sparse_tab: SParseTab           # parsing table
+    DEFAULT_TERM_SEGREG = ("'", "'")        # default terminal segregation
+    DEFAULT_EXT_GOAL_SIGN = "'"             # default sign for designation extended goal
+    DEFAULT_GOAL_NTERM = ''                 # default goal nterminal
+    DEFAULT_END_TERM = '⊥'                  # default end terminal
+    FILE_KEYWORD_IN_START = "SPARSER"
+    FILE_KEYWORD_BEFORE_RULES = "RULES"
+    FILE_KEYWORD_BEFORE_HEADERS = "HDRS"
+    FILE_KEYWORD_BEFORE_TABLE = "STAB"
+    __rules: list                           # rules of grammar
+    __tokens: tuple                         # tokens
+    __term_segreg: tuple                    # terminal segregation
+    __ext_goal_sign: str                    # sign for designation extended goal
+    goal_nterm: str                         # goal nterminal symbol
+    end_term: str                           # end terminal symbol
+    __sparse_tab: SParseTab                 # parsing table
 
     def __init__(self, **kwargs):
         self.__sparse_tab = None
@@ -772,12 +800,15 @@ class SParser(ISParser):
         """
         Parses tokens and constructs parse tree
         :return: root of parse tree
+        :raises: NoneLexerError, NoneSParseTabErr,
+                EmptyRulesError, ParseSyntaxError
         """
         if self.lexer is None:
             raise NoneLexerError("Lexer is None!!!")
-        if self.__sparse_tab is None:
+        elif self.__sparse_tab is None:
             raise NoneSParseTabErr("Parsing table is None!!!")
-
+        elif len(self.__rules) == 0:
+            raise EmptyRulesError("List of rules is empty!!!")
         st_stack = [0]         # stack of states
         buf = []               # buffer tokens and nodes
         root = None            # root of parse tree
@@ -876,6 +907,93 @@ class SParser(ISParser):
                                               goal_nterm,
                                               self.end_term)
 
+    def write_stab_to_file(self, filename: str)-> None:
+        """
+        Write rules and SParseTable to file
+        :param filename: path to file
+        :return: None
+        :raises: NoneSParseTabErr, NoneSParseTabErr,
+                EmptyRulesError
+        """
+        if self.__sparse_tab is None:
+            raise NoneSParseTabErr("Parsing table is None!!!")
+        elif self.__sparse_tab.rows == 0:
+            raise NoneSParseTabErr("Parsing table is empty!!!")
+        elif len(self.__rules) == 0:
+            raise EmptyRulesError("List of rules is empty!!!")
+        with open(filename, 'wb') as file:
+            data = self.FILE_KEYWORD_IN_START.encode()
+            file.write(pack(f'<{len(data)}s', data))                        # write "SPARSER"
+            data = self.FILE_KEYWORD_BEFORE_RULES.encode()
+            file.write(pack(f'<{len(data)}s', data))                        # write "RULES"
+            count_rules = len(self.__rules)
+            file.write(pack(f'<q', count_rules))                            # write count rules
+            for i in range(count_rules):
+                key = self.__rules[i].key
+                file.write(pack(f'<I{len(key)}s', len(key), key.encode()))      # write key
+                file.write(pack('<I', len(self.__rules[i].value)))              # write count of values in rule
+                for val in self.__rules[i].value:                               # write values
+                    file.write(pack(f'<I{len(val)}s', len(val), val.encode()))
+            data = self.FILE_KEYWORD_BEFORE_HEADERS.encode()
+            file.write(pack(f'<{len(data)}s', data))                         # write "HDRS"
+            hdrs = self.__sparse_tab.headers
+            file.wrte(pack(f'<Q', len(hdrs)))                       # write count of hdrs
+            for hdr in hdrs:
+                file.write(pack(f'<I{len(hdr)}s', hdr.encode()))
+            data = self.FILE_KEYWORD_BEFORE_TABLE.encode()
+            file.write(pack(f'<{len(data)}s', data))                # write "TAB"
+            file.write(pack(f'<q', self.__sparse_tab.rows))         # count of rows
+            for i in range(self.__sparse_tab.rows):
+                for j in range(self.__sparse_tab.columns):
+                    cell = self.__sparse_tab.cell_ind(i, j)
+                    file.write(pack(f'<Hq', cell.action, cell.value))
+
+    def read_stab_from_file(self, filename: str)-> None:
+        """
+        Read rules and SParseTable from file
+        :param filename: path to file
+        :return: None
+        :raise: ReadingSTabFileErr
+        """
+        def search_keyword(file, keyword: str)-> None:
+            count_bytes = len(keyword.encode())
+            data = unpack(f'<{count_bytes}s', file.read(count_bytes))[0]
+            if data.decode() != keyword:
+                raise ReadingSTabFileErr("Uncorrect format of file that contain SParseTable!!! " +
+                                         "Not found " + keyword + " keyword!!!")
+        with open(filename, 'rb') as file:
+            search_keyword(file, self.FILE_KEYWORD_IN_START)            # read "SPARSER"
+            search_keyword(file, self.FILE_KEYWORD_BEFORE_RULES)        # read "RULES"
+            count_rules = unpack('<q', file.read(8))[0]                 # read count rules
+            self.__rules.clear()
+            for irule in range(count_rules):
+                rule = IndRule()
+                rule.index = irule
+                key_len = unpack('<I', file.read(4))[0]                 # read key
+                key = unpack(f'<{key_len}', file.read(key_len))[0].decode()
+                rule.key = key
+                count_vals = unapck('<I', file.read(4))[0]              # read count of values in rule
+                vals = []
+                for ival in range(count_vals):                          # read values
+                    len_val = unpack('<I', file.read(4))[0]
+                    val = unpack(f'<{len_val}s', file.read(len_val))[0].decode()
+                    vals.append(val)
+                rule.value = tuple(vals)
+            search_keyword(file, self.FILE_KEYWORD_BEFORE_HEADERS)      # read "HDRS"
+            count_hdrs = unpack('<Q', file.read(8))[0]                  # read count of headers
+            hdrs = []
+            for ihdr in range(count_hdrs):                              # read hdrs
+                len_hdr = unpack('<I', file.read(4))[0]
+                hdr = unpack(f'<{len_hdr}', file.read(len_hdr))[0].decode()
+                hdrs += [hdr]
+            search_keyword(self.FILE_KEYWORD_BEFORE_TABLE)              # read "TAB"
+            count_rows = unpack(f'<q', file.read(8))[0]                 # read count of rows
+            sparse_tab = SParseTab(headers=hdrs, rows=count_rows)
+            for i in range(sparse_tab.rows):                            # read SParseTable
+                for j in range(sparse_tab.columns):
+                    cell = sparse_tab.cell_ind(i, j)
+                    cell.action, cell.value = unpack('<Hq', file.read(10))
+
     @property
     def lexer(self)-> ILexer:
         """
@@ -930,6 +1048,7 @@ class SParser(ISParser):
         Set lexemes of language
         :param value: list of lexemes
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("Rules must be not None!!!")
@@ -949,6 +1068,7 @@ class SParser(ISParser):
         Set rules of grammar.
         :param value: list of grammar rules
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("Rules must be not None!!!")
@@ -976,6 +1096,73 @@ class SParser(ISParser):
                 rule.index = index
                 self.__rules.append(rule)
                 index += 1
+
+"""
+****************************************************************
+        File format for rules and SParseTable:
+
+        +------------+-------------+-------------+
+        |  "SPARSER" |   "RULES"   | count rules |
+        |  (7 bytes) |  (5 bytes)  |  (8 bytes)  |
+        +------------+-------------+-------------+
+        |  len key1  |     key1    | count vals1 |
+        | (4 bytes)  |             |  (4 bytes)  |
+        +------------+---------------------------+
+        |  len val11 |           val11           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |  len val12 |           val12           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |                                        |
+        .                                        .
+        |                                        |
+        +------------+-------------+-------------+
+        |  len keyN  |     keyN    | count valsN |
+        | (4 bytes)  |             |  (4 bytes)  |
+        +------------+---------------------------+
+        |  len valN1 |           valN1           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |  len valN2 |           valN2           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |                                        |
+        .                                        .
+        |                                        |
+        +---------------------------+------------+
+        |           "HDRS"          | count hdrs |
+        |         (4 bytes)         |  (8 bytes) |
+        +------------+---------------------------+
+        |  len hdr1  |            hdr1           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |                                        |
+        .                                        .
+        |                                        |
+        +------------+---------------------------+
+        |  len hdrN  |            hdrN           |
+        |  (4 bytes) |                           |
+        +------------+---------------------------+
+        |    "TAB"   |        count rows         |
+        |  (3 bytes) |         (8 bytes)         |
+        +------------+-------+-------------------+
+        |    cell action11   |   cell value11    |
+        |       (2 bytes)    |     (8 bytes)     |
+        +--------------------+-------------------+
+        |    cell action21   |   cell value21    |
+        |       (2 bytes)    |     (8 bytes)     |
+        +--------------------+-------------------+
+        |                                        |
+        .                                        .
+        |                                        |
+        +--------------------+-------------------+
+        |    cell actionMN   |   cell valueMN    |
+        |       (2 bytes)    |     (8 bytes)     |
+        +--------------------+-------------------+
+        
+****************************************************************
+"""
 
 
 # if __name__ == "__main__":
