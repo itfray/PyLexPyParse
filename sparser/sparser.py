@@ -822,7 +822,7 @@ class SParser(ISParser):
         msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
         try:
             while flag:
-                if token.kind in self.tokens:       # transform token to term
+                if token.kind in self.tokens:              # transform token to term
                     last_lexeme = token.value
                     term = token.kind
                 elif token.value == self.end_term:
@@ -838,9 +838,9 @@ class SParser(ISParser):
                     buf.append(Node(value=token))          # shift token in buffer
                     token = next(gen_token)                # generate new token
                 elif cell.action == cell.RUL:
-                    rule = self.__rules[cell.value]         # roll up by rule
+                    rule = self.__rules[cell.value]        # roll up by rule
                     if len(rule.value) > 1:
-                        ibuf = len(buf) - len(rule.value)   # index of first element for roll up
+                        ibuf = len(buf) - len(rule.value)  # index of first element for roll up
                         node = Node()
                         for i in range(len(rule.value)):
                             child = buf.pop(ibuf)
