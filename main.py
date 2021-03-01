@@ -52,12 +52,12 @@ parser = SParser(lexer=lexer,
                  goal_nterm=GOAL_NTERM,
                  end_term=END_TERM,
                  parsing_of_rules=RULES)
-if os.path.exists(stab_filename) and\
-   os.path.isfile(stab_filename):
-    parser.read_stab_from_file(stab_filename)
-else:
-    parser.create_sparse_tab()
-    parser.write_stab_to_file(stab_filename)
-print_sparse_tab(parser._SParser__sparse_tab, 6)
+# if os.path.exists(stab_filename) and\
+#    os.path.isfile(stab_filename):
+#     parser.read_stab_from_file(stab_filename)
+# else:
+#     parser.create_sparse_tab()
+#     parser.write_stab_to_file(stab_filename)
+parser.create_sparse_tab()
 node = parser.parse()
 print(node)

@@ -819,48 +819,56 @@ class SParser(ISParser):
         token = next(gen_token)                 # generate first token
         last_lexeme = ""                        # last looked lexeme
         flag = token.value != self.end_term     # if there is still tokens
-        while flag:
-            if token.kind in self.tokens:       # transform token to term
-                last_lexeme = token.value
-                term = token.kind
-            elif token.value == self.end_term:
-                term = token.value
-            else:
-                last_lexeme = token.value
-                term = self.term_segreg[0] + token.value + \
-                       self.term_segreg[-1]
-            # get cell of matrix of syntax analysis
-            cell = self.__sparse_tab.cell_hdr(st_stack[-1], term)
-            if cell.action == cell.SHF:
-                st_stack.append(cell.value)            # go to a new state
-                buf.append(Node(value=token))          # shift token in buffer
-                token = next(gen_token)                # generate new token
-            elif cell.action == cell.RUL:
-                rule = self.__rules[cell.value]         # roll up by rule
-                if len(rule.value) > 1:
-                    ibuf = len(buf) - len(rule.value)   # index of first element for roll up
-                    node = Node()
-                    for i in range(len(rule.value)):
-                        child = buf.pop(ibuf)
-                        child.parent = node
-                        node.childs.append(child)       # add elements as child nodes
-                        st_stack.pop(-1)
-                    buf.append(node)                    # replace elements to new node
+        msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
+        try:
+            while flag:
+                if token.kind in self.tokens:       # transform token to term
+                    last_lexeme = token.value
+                    term = token.kind
+                elif token.value == self.end_term:
+                    term = token.value
                 else:
-                    st_stack.pop(-1)
-                cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
-                st_stack.append(cell.value)             # go to new state
-            elif cell.action == cell.ACC:
-                root = buf[-1]               # set root
-                return root
-            else:
-                msg = f"Unexcepted lexeme '{last_lexeme}' " + \
-                      f"in line {self.__lexer.num_line} " + \
-                      f"in column {self.__lexer.num_column}!!!"
-                raise ParseSyntaxError(lexeme=last_lexeme,
-                                       num_line=self.__lexer.num_line,
-                                       num_column=self.__lexer.num_column,
-                                       message=msg)
+                    last_lexeme = token.value
+                    term = self.term_segreg[0] + token.value + \
+                           self.term_segreg[-1]
+                # get cell of matrix of syntax analysis
+                cell = self.__sparse_tab.cell_hdr(st_stack[-1], term)
+                if cell.action == cell.SHF:
+                    st_stack.append(cell.value)            # go to a new state
+                    buf.append(Node(value=token))          # shift token in buffer
+                    token = next(gen_token)                # generate new token
+                elif cell.action == cell.RUL:
+                    rule = self.__rules[cell.value]         # roll up by rule
+                    if len(rule.value) > 1:
+                        ibuf = len(buf) - len(rule.value)   # index of first element for roll up
+                        node = Node()
+                        for i in range(len(rule.value)):
+                            child = buf.pop(ibuf)
+                            child.parent = node
+                            node.childs.append(child)       # add elements as child nodes
+                            st_stack.pop(-1)
+                        buf.append(node)                    # replace elements to new node
+                    else:
+                        st_stack.pop(-1)
+                    cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
+                    st_stack.append(cell.value)             # go to new state
+                elif cell.action == cell.ACC:
+                    root = buf[-1]               # set root
+                    return root
+                else:
+                    raise ParseSyntaxError(lexeme=last_lexeme,
+                                           num_line=self.__lexer.num_line,
+                                           num_column=self.__lexer.num_column,
+                                           message=msg_err.format(last_lexeme,
+                                                                  self.__lexer.num_line,
+                                                                  self.__lexer.num_column))
+        except KeyError:
+            raise ParseSyntaxError(lexeme=last_lexeme,
+                                   num_line=self.__lexer.num_line,
+                                   num_column=self.__lexer.num_column,
+                                   message=msg_err.format(last_lexeme,
+                                                          self.__lexer.num_line,
+                                                          self.__lexer.num_column))
         return root
 
     def is_terminal(self, value: str)-> bool:
