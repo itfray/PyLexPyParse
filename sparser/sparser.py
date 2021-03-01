@@ -943,26 +943,28 @@ class SParser(ISParser):
             data = self.FILE_KEYWORD_BEFORE_RULES.encode()
             file.write(struct.pack(f'<{len(data)}s', data))                        # write "RULES"
             count_rules = len(self.__rules)
-            file.write(struct.pack(f'<q', count_rules))                            # write count rules
+            file.write(struct.pack(f'<i', count_rules))                            # write count rules
             for i in range(count_rules):
-                key = self.__rules[i].key
-                file.write(struct.pack(f'<I{len(key)}s', len(key), key.encode()))      # write key
-                file.write(struct.pack('<I', len(self.__rules[i].value)))                      # write count of values in rule
-                for val in self.__rules[i].value:                                              # write values
-                    file.write(struct.pack(f'<I{len(val)}s', len(val), val.encode()))
+                bkey = self.__rules[i].key.encode()
+                file.write(struct.pack(f'<H{len(bkey)}s', len(bkey), bkey))          # write key
+                file.write(struct.pack('<H', len(self.__rules[i].value)))            # write count of values in rule
+                for val in self.__rules[i].value:                                    # write values
+                    bval = val.encode()
+                    file.write(struct.pack(f'<H{len(bval)}s', len(bval), bval))
             data = self.FILE_KEYWORD_BEFORE_HEADERS.encode()
             file.write(struct.pack(f'<{len(data)}s', data))                 # write "HDRS"
             hdrs = self.__sparse_tab.headers
-            file.write(struct.pack(f'<Q', len(hdrs)))                       # write count of hdrs
+            file.write(struct.pack(f'<I', len(hdrs)))                       # write count of hdrs
             for hdr in hdrs:
-                file.write(struct.pack(f'<I{len(hdr)}s', len(hdr), hdr.encode()))
+                bhdr = hdr.encode()
+                file.write(struct.pack(f'<H{len(bhdr)}s', len(bhdr), bhdr))
             data = self.FILE_KEYWORD_BEFORE_TABLE.encode()
             file.write(struct.pack(f'<{len(data)}s', data))                # write "TAB"
-            file.write(struct.pack(f'<q', self.__sparse_tab.rows))         # count of rows
+            file.write(struct.pack(f'<i', self.__sparse_tab.rows))         # count of rows
             for i in range(self.__sparse_tab.rows):
                 for j in range(self.__sparse_tab.columns):
                     cell = self.__sparse_tab.cell_ind(i, j)
-                    file.write(struct.pack(f'<Hq', cell.action, cell.value))
+                    file.write(struct.pack(f'<Bi', cell.action, cell.value))
 
     def read_stab_from_file(self, filename: str, buffering = -1)-> None:
         """
@@ -977,46 +979,41 @@ class SParser(ISParser):
             if data.decode() != keyword:
                 raise ReadingSTabFileErr("Uncorrect format of file that contain SParseTable!!! " +
                                          "Not found " + keyword + " keyword!!!")
-        try:
-            with open(filename, 'rb', buffering) as file:
-                search_keyword(file, self.FILE_KEYWORD_IN_START)            # read "SPARSER"
-                search_keyword(file, self.FILE_KEYWORD_BEFORE_RULES)        # read "RULES"
-                count_rules = struct.unpack('<q', file.read(8))[0]                  # read count rules
-                self.__rules.clear()
-                for irule in range(count_rules):
-                    rule = IndRule()
-                    rule.index = irule
-                    key_len = struct.unpack('<I', file.read(4))[0]                 # read key
-                    key = struct.unpack(f'<{key_len}s', file.read(key_len))[0].decode()
-                    rule.key = key
-                    count_vals = struct.unpack('<I', file.read(4))[0]              # read count of values in rule
-                    vals = []
-                    for ival in range(count_vals):                          # read values
-                        len_val = struct.unpack('<I', file.read(4))[0]
-                        val = struct.unpack(f'<{len_val}s', file.read(len_val))[0].decode()
-                        vals.append(val)
-                    rule.value = tuple(vals)
-                    self.__rules.append(rule)
-                search_keyword(file, self.FILE_KEYWORD_BEFORE_HEADERS)      # read "HDRS"
-                count_hdrs = struct.unpack('<Q', file.read(8))[0]                  # read count of headers
-                hdrs = []
-                for ihdr in range(count_hdrs):                              # read hdrs
-                    len_hdr = struct.unpack('<I', file.read(4))[0]
-                    hdr = struct.unpack(f'<{len_hdr}s', file.read(len_hdr))[0].decode()
-                    hdrs += [hdr]
-                search_keyword(file, self.FILE_KEYWORD_BEFORE_TABLE)        # read "TAB"
-                count_rows = struct.unpack(f'<q', file.read(8))[0]                 # read count of rows
-                sparse_tab = SParseTab(headers=hdrs, rows=count_rows)
-                for i in range(sparse_tab.rows):                            # read SParseTable
-                    for j in range(sparse_tab.columns):
-                        cell = sparse_tab.cell_ind(i, j)
-                        cell.action, cell.value = struct.unpack('<Hq', file.read(10))
-                self.__sparse_tab = sparse_tab
-        except ReadingSTabFileErr as err:
-            raise err
-        except struct.error as err:
-            raise ReadingSTabFileErr("Uncorrect format of file that contain SParseTable!!! " +
-                                     f"struct.error: {err}")
+
+        with open(filename, 'rb', buffering) as file:
+            search_keyword(file, self.FILE_KEYWORD_IN_START)  # read "SPARSER"
+            search_keyword(file, self.FILE_KEYWORD_BEFORE_RULES)  # read "RULES"
+            count_rules = struct.unpack('<i', file.read(4))[0]  # read count rules
+            self.__rules.clear()
+            for irule in range(count_rules):
+                rule = IndRule()
+                rule.index = irule
+                key_len = struct.unpack('<H', file.read(2))[0]  # read key
+                key = struct.unpack(f'<{key_len}s', file.read(key_len))[0].decode()
+                rule.key = key
+                count_vals = struct.unpack('<H', file.read(2))[0]  # read count of values in rule
+                vals = []
+                for ival in range(count_vals):  # read values
+                    val_len = struct.unpack('<H', file.read(2))[0]
+                    val = struct.unpack(f'<{val_len}s', file.read(val_len))[0].decode()
+                    vals.append(val)
+                rule.value = tuple(vals)
+                self.__rules.append(rule)
+            search_keyword(file, self.FILE_KEYWORD_BEFORE_HEADERS)  # read "HDRS"
+            count_hdrs = struct.unpack('<I', file.read(4))[0]  # read count of headers
+            hdrs = []
+            for ihdr in range(count_hdrs):  # read hdrs
+                hdr_len = struct.unpack('<H', file.read(2))[0]
+                hdr = struct.unpack(f'<{hdr_len}s', file.read(hdr_len))[0].decode()
+                hdrs.append(hdr)
+            search_keyword(file, self.FILE_KEYWORD_BEFORE_TABLE)  # read "TAB"
+            count_rows = struct.unpack(f'<i', file.read(4))[0]  # read count of rows
+            sparse_tab = SParseTab(headers=hdrs, rows=count_rows)
+            for i in range(sparse_tab.rows):  # read SParseTable
+                for j in range(sparse_tab.columns):
+                    cell = sparse_tab.cell_ind(i, j)
+                    cell.action, cell.value = struct.unpack('<Bi', file.read(5))
+            self.__sparse_tab = sparse_tab
 
     @property
     def lexer(self)-> ILexer:
