@@ -1,6 +1,6 @@
 from str_reader.str_reader import StrReader
 from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
-from sparser.sparser import SParser, print_sparse_tab, Rule
+from sparser.sparser import SParser, print_sparse_tab, ReadingSTabFileErr
 from time import time
 import os.path
 
