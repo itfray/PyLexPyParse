@@ -2,6 +2,7 @@ from str_reader.str_reader import StrReader
 from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
 from sparser.sparser import SParser, print_sparse_tab, Rule
 from time import time
+import os.path
 
 
 CASE_SENSITIVE = False
@@ -45,11 +46,18 @@ RULES = """
         """
 TOKENS = ('ID',)
 
+stab_filename = "stab_file.prstab"
 parser = SParser(lexer=lexer,
                  tokens=TOKENS,
                  goal_nterm=GOAL_NTERM,
                  end_term=END_TERM,
                  parsing_of_rules=RULES)
-parser.create_sparse_tab()
+if os.path.exists(stab_filename) and\
+   os.path.isfile(stab_filename):
+    parser.read_stab_from_file(stab_filename)
+else:
+    parser.create_sparse_tab()
+    parser.write_stab_to_file(stab_filename)
+print_sparse_tab(parser._SParser__sparse_tab, 6)
 node = parser.parse()
 print(node)
