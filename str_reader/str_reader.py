@@ -33,6 +33,7 @@ class StrReader(IStrReader):
         Read specified number of chars from string buffer
         :param count: number of read chars from string buffer
         :return: string of read chars
+        :raise: ValueError
         """
         if count < 1:
             raise ValueError("count must be greater 0!!!")

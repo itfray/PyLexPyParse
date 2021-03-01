@@ -24,6 +24,7 @@ class Lexer(ILexer):
         """
         Peforms search lexemes in string data
         :return: tokenized parts of data i.e. tokens
+        :raises: NoneDataReaderError, UnexceptedLexError
         """
         if self.__data_reader is None:                                # checks data reader
             raise NoneDataReaderError("Data reader is None!!!")
@@ -112,6 +113,7 @@ class Lexer(ILexer):
         Set size read data
         :param value: size one portion of read data
         :return: None
+        :raise: ValueError
         """
         if value < 1:
             raise ValueError('Size read data value must be greater 0!!!')
@@ -131,6 +133,7 @@ class Lexer(ILexer):
         Set lexical specification
         :param value: tuple of lexical specification
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError("specification must be is not None!!!")

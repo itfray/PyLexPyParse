@@ -31,6 +31,7 @@ class FileStrReader(IStrReader):
             :param buffering: size buffer for reading from file
             :param encoding: what encoding for reading from file
         :return: None
+        :raises: all exception of file object
         """
         try:
             buffering = kwargs.get("buffering", self.DEFAULT_BUFFERING)
@@ -53,6 +54,7 @@ class FileStrReader(IStrReader):
         Read specified number of chars from string buffer readed from file
         :param count: number of read chars from string buffer
         :return: string of read chars
+        :raise: OSError, ValueError
         """
         if self.__file is None:
             raise OSError("Can not read data from file!!! Opened file is not found!!!")

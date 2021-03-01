@@ -38,6 +38,7 @@ class ProgLangLexer(Lexer):
         """
         Peforms search lexemes in string data
         :return: tokenized parts of data i.e. tokens
+        :raise: UnexceptedLexError
         """
         total_regex = self._Lexer__token_regex                              # get total compiled regex
         token_gen = super().tokens()                                        # get tokens generator
@@ -87,6 +88,7 @@ class ProgLangLexer(Lexer):
         Set keywords of programming language
         :param value: tuple of keywords
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError('keywords can not be None!!!')
@@ -112,6 +114,7 @@ class ProgLangLexer(Lexer):
         Set multitokens of programming language.
         :param value: dict of multitokens
         :return: None
+        :raise: ValueError
         """
         if value is None:
             raise ValueError('multitokens can not be None!!!')
