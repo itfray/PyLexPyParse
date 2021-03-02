@@ -3,30 +3,18 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> section_program section_uses;
-        section_program -> 'program' ID ';' |
-                            ε;
+        program -> section_name section_uses;
+        section_name -> 'program' ID ';' |
+                         ε;
         section_uses -> usess |
                         ε;
-        usess -> usess uses|
+        usess -> usess uses |
                  uses;
         uses -> 'uses' modules ';';
         modules -> modules ',' module |
                    module;
         module -> ID
         """
-# RULES = """
-#         program -> section_program;
-#         section_program -> 'program' ID ';' section_uses |
-#                             section_uses;
-#         section_uses -> usess;
-#         usess -> usess uses|
-#                  uses;
-#         uses -> 'uses' modules ';';
-#         modules -> modules ',' module |
-#                    module;
-#         module -> ID
-#         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
 
@@ -48,6 +36,7 @@ if __name__ == "__main__":
            program train;
            uses GraphABC, JopaSuka;
            uses Nahui;
+           uses Blyad, Nah;
            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
