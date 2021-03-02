@@ -76,6 +76,7 @@ STR: r"
 
 if __name__ == "__main__":
     from str_reader.file_reader import FileStrReader
+    from lexer.lexer import Token
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from time import time
 
@@ -94,7 +95,8 @@ if __name__ == "__main__":
     t0 = time()
     try:
         for token in lexer.tokens():
-            print(f"{lexer.num_line}:{lexer.num_column}: {token}")
+            print(f"{lexer.num_line}:{lexer.num_column}: " +
+                  f"{Token(lexer.kinds[token.kind], lexer.lexemes[token.kind][token.value])}")
     except UnexceptedLexError as err:
         print(err)
     print(time() - t0, " sec")

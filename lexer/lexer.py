@@ -19,8 +19,23 @@ class Lexer(ILexer):
         self.data_reader = kwargs.get("data_reader", None)
         self.size_read_data = kwargs.get("size_read_data", self.DEFAULT_SIZE_READ_DATA)
         self.specification = kwargs.get("specification", ())
+        self.__kind_ids = {}
+        self.__kinds = []
+        self.__lexemes = []
 
-    def tokens(self):
+    @property
+    def kind_ids(self) -> dict:
+        return self.__kind_ids
+
+    @property
+    def kinds(self) -> list:
+        return self.__kinds
+
+    @property
+    def lexemes(self) -> list:
+        return self.__lexemes
+
+    def _tokens(self):
         """
         Peforms search lexemes in string data
         :return: tokenized parts of data i.e. tokens

@@ -6,8 +6,8 @@ class Token:
     """
     Token is class for tokenization of data
     """
-    kind
-    value
+    kind = None
+    value = None
     def __init__(self, kind, value):
         self.kind = kind
         self.value = value
@@ -23,26 +23,68 @@ class ILexer(abc.ABC):
     """
     ILexer is interface of lexical analyzer for strings analyzing
     """
+    @property
     @abc.abstractmethod
+    def kind_ids(self)-> dict:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def kinds(self)-> list:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def lexemes(self)-> list:
+        pass
+
     def tokens(self):
+        self.kind_ids.clear()
+        self.lexemes.clear()
+        for token in self._tokens():
+            yield self.new_id_token(token)
+
+    def new_id_token(self, token: Token)-> Token:
+        if token.kind not in self.kind_ids:
+            kind_id = len(self.kind_ids)
+            self.kind_ids[token.kind] = kind_id
+            self.kinds.append(token.kind)
+            self.lexemes.append([token.value,])
+            value_id = 0
+        else:
+            kind_id = self.kind_ids[token.kind]
+            try:
+                value_id = self.lexemes[kind_id].index(token.value)
+            except ValueError:
+                self.lexemes[kind_id].append(token.value)
+                value_id = len(self.lexemes[kind_id]) - 1
+        new_token = Token(kind_id, value_id)
+        return new_token
+
+    @abc.abstractmethod
+    def _tokens(self):
         """
         Peforms search lexemes in string data
         :return: tokenized parts of data i.e. tokens
         """
 
     @property
+    @abc.abstractmethod
     def num_line(self):
         """
         Get number of current processed line
         :return: number of line
         """
+        return 0
 
     @property
+    @abc.abstractmethod
     def num_column(self):
         """
         Get number of current processed column
         :return: number of column
         """
+        return 0
 
     @property
     @abc.abstractmethod

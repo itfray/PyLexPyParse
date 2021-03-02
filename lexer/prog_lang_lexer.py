@@ -34,14 +34,14 @@ class ProgLangLexer(Lexer):
         self.case_sensitive = kwargs.get("case_sensitive", True)
         self.multitokens = kwargs.get("multitokens", dict())
 
-    def tokens(self):
+    def _tokens(self):
         """
         Peforms search lexemes in string data
         :return: tokenized parts of data i.e. tokens
         :raise: UnexceptedLexError
         """
         total_regex = self._Lexer__token_regex                              # get total compiled regex
-        token_gen = super().tokens()                                        # get tokens generator
+        token_gen = super()._tokens()                                        # get tokens generator
         try:
             while True:
                 token = next(token_gen)                                     # get token
