@@ -829,10 +829,12 @@ class SParser(ISParser):
         # add end terminal how end token
         gen_token = merge_ranges(self.lexer.tokens(),
                     range_objs(Token(self.end_term, self.end_term)))
-        token = next(gen_token)                 # generate first token
+        curr_gen_token = gen_token
+        token = next(curr_gen_token)                 # generate first token
         last_lex = ""                           # last looked lexeme
         flag = token.value != self.end_term     # if there is still tokens
         msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
+        added_empty = False
         while flag:
             if token.value in (self.end_term, self.empty_term):
                 term = token.value
@@ -853,24 +855,29 @@ class SParser(ISParser):
                 raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
                                        num_column=ncol_lex, message=msg)
             if cell.action == cell.SHF:
+                added_empty = False
                 st_stack.append(cell.value)    # go to a new state
                 buf.append(Node(value=token))  # shift token in buffer
                 try:
-                    token = next(gen_token)        # generate new token
+                    token = next(curr_gen_token)        # generate new token
                 except StopIteration:
                     raise UncorrectSParseTabErr(f"Last looked cell in the " +
                                                 f"SParseTable [{st_stack[-2]}]['{term}']")
             elif cell.action == cell.RUL:
+                added_empty = False
                 rule = self.__rules[cell.value]  # roll up by rule
                 if len(rule.value) > 1:
                     ibuf = len(buf) - len(rule.value)  # index of first element for roll up
                     node = Node()
                     for i in range(len(rule.value)):
                         child = buf.pop(ibuf)
-                        child.parent = node
-                        node.childs.append(child)  # add elements as child nodes
                         st_stack.pop(-1)
-                    buf.append(node)  # replace elements to new node
+                        if not child.value is None and\
+                           child.value.value == self.empty_term:
+                            continue
+                        child.parent = node
+                        node.childs.append(child)   # add elements as child nodes
+                    buf.append(node)                # replace elements to new node
                 else:
                     st_stack.pop(-1)
                 try:
@@ -882,9 +889,14 @@ class SParser(ISParser):
                 root = buf[-1]  # set root
                 return root
             else:
-                msg = msg_err.format(last_lex, nline_lex, ncol_lex)
-                raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
-                                       num_column=ncol_lex, message=msg)
+                if added_empty:
+                    msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                    raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
+                                           num_column=ncol_lex, message=msg)
+                else:
+                    added_empty = True
+                    curr_gen_token = merge_ranges(range_objs(token), gen_token)
+                    token = Token(self.empty_term, self.empty_term)
         return root
 
     def is_terminal(self, value: str)-> bool:

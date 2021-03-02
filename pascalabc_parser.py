@@ -3,9 +3,13 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> 'program' ID ';' uses;
-        uses -> 'uses' ID ';' |
-        ε
+        program -> 'program' ID ';' usess;
+        usess -> usess uses |
+                 uses;
+        uses -> 'uses' modules ';'|
+                 ε;
+        modules -> modules ',' ID |
+                   ID
         """
 # RULES = """
 #         program -> 'program' ID ';' usess;
@@ -34,6 +38,8 @@ if __name__ == "__main__":
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
     stmt = """
            program train;
+           uses GraphABC, JopaSuka;
+           uses Nahui;
            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
@@ -63,7 +69,7 @@ if __name__ == "__main__":
                      parsing_of_rules=RULES)
     print(parser.rules)
     parser.create_sparse_tab()
-    print_sparse_tab(parser._SParser__sparse_tab, 10)
+#    print_sparse_tab(parser._SParser__sparse_tab, 10)
     t0 = time()
     node = parser.parse()
     print("syntax analyze: ", time() - t0, " sec")
