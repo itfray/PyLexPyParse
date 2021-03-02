@@ -3,21 +3,29 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> 'program' ID ';' usess;
-        usess -> usess uses |
+        program -> section_program section_uses;
+        section_program -> 'program' ID ';' |
+                            ε;
+        section_uses -> usess |
+                        ε;
+        usess -> usess uses|
                  uses;
-        uses -> 'uses' modules ';'|
-                 ε;
-        modules -> modules ',' ID |
-                   ID
+        uses -> 'uses' modules ';';
+        modules -> modules ',' module |
+                   module;
+        module -> ID
         """
 # RULES = """
-#         program -> 'program' ID ';' usess;
-#         usess -> usess uses |
+#         program -> section_program;
+#         section_program -> 'program' ID ';' section_uses |
+#                             section_uses;
+#         section_uses -> usess;
+#         usess -> usess uses|
 #                  uses;
-#         uses -> 'uses' modules ';'
-#         modules -> modules ',' ID |
-#                    ID
+#         uses -> 'uses' modules ';';
+#         modules -> modules ',' module |
+#                    module;
+#         module -> ID
 #         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
@@ -38,9 +46,12 @@ if __name__ == "__main__":
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
     stmt = """
            program train;
-           uses GraphABC, JopaSuka;
-           uses Nahui;
            """
+#     stmt = """
+#            program train;
+#            uses GraphABC, JopaSuka;
+#            uses Nahui;
+#            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
                           specification=SPECIFICATION,
@@ -50,14 +61,14 @@ if __name__ == "__main__":
                           keywords=KEYWORDS,
                           multitokens=MULTITOKENS,
                           case_sensitive=CASE_SENSITIVE)
-    t0 = time()
-    try:
-        for token in lexer.tokens():
-            print(f"{lexer.num_line}:{lexer.num_column}: {token}")
-    except UnexceptedLexError as err:
-        print(err)
-    print("lexical analyze: ", time() - t0, " sec")
-    print()
+    # t0 = time()
+    # try:
+    #     for token in lexer.tokens():
+    #         print(f"{lexer.num_line}:{lexer.num_column}: {token}")
+    # except UnexceptedLexError as err:
+    #     print(err)
+    # print("lexical analyze: ", time() - t0, " sec")
+    # print()
 
     stab_filename = STAB_FILENAME
     parser = SParser(lexer=lexer,
@@ -69,8 +80,7 @@ if __name__ == "__main__":
                      parsing_of_rules=RULES)
     print(parser.rules)
     parser.create_sparse_tab()
-#    print_sparse_tab(parser._SParser__sparse_tab, 10)
     t0 = time()
     node = parser.parse()
-    print("syntax analyze: ", time() - t0, " sec")
+    print("parsing time: ", time() - t0, " sec")
     print(node)
