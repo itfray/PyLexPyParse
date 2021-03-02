@@ -780,6 +780,7 @@ class SParser(ISParser):
     DEFAULT_EXT_GOAL_SIGN = "'"             # default sign for designation extended goal
     DEFAULT_GOAL_NTERM = ''                 # default goal nterminal
     DEFAULT_END_TERM = '⊥'                  # default end terminal
+    DEFAULT_EMPTY_TERM = 'ε'                # default empty terminal
     FILE_KEYWORD_IN_START = "SPARSER"
     FILE_KEYWORD_BEFORE_RULES = "RULES"
     FILE_KEYWORD_BEFORE_HEADERS = "HDRS"
@@ -790,6 +791,7 @@ class SParser(ISParser):
     __ext_goal_sign: str                    # sign for designation extended goal
     goal_nterm: str                         # goal nterminal symbol
     end_term: str                           # end terminal symbol
+    empty_term: str                         # empty terminal symbol
     __sparse_tab: SParseTab                 # parsing table
 
     def __init__(self, **kwargs):
@@ -799,6 +801,7 @@ class SParser(ISParser):
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
         self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
         self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
+        self.empty_term = kwargs.get("empty_term", self.DEFAULT_EMPTY_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
         self.rules = kwargs.get("rules", [])
         specification = kwargs.get("parsing_of_rules", None)
@@ -825,7 +828,7 @@ class SParser(ISParser):
         # create token generator
         # add end terminal how end token
         gen_token = merge_ranges(self.lexer.tokens(),
-                    range_objs(Token("", self.end_term)))
+                    range_objs(Token(self.end_term, self.end_term)))
         token = next(gen_token)                 # generate first token
         last_lex = ""                           # last looked lexeme
         flag = token.value != self.end_term     # if there is still tokens
@@ -833,12 +836,12 @@ class SParser(ISParser):
         while flag:
             if token.kind in self.tokens:  # transform token to term
                 term = token.kind
-            elif token.value == self.end_term:
+            elif token.value in (self.end_term, self.empty_term):
                 term = token.value
             else:
                 term = self.term_segreg[0] + token.value + \
                        self.term_segreg[-1]
-            if token.value != self.end_term:
+            if token.value not in (self.end_term, self.empty_term):
                 last_lex = token.value
                 nline_lex = self.__lexer.num_line
                 ncol_lex = self.__lexer.num_column
@@ -892,9 +895,11 @@ class SParser(ISParser):
         """
         if value == self.end_term:
             return True
+        elif value == self.empty_term:
+            return True
         elif value in self.__tokens:
             return True
-        elif len(value) > 2 and\
+        elif len(value) > 1 and\
              value[0] == self.term_segreg[0] and\
              value[-1] == self.term_segreg[-1]:
             return True
@@ -1143,7 +1148,6 @@ class SParser(ISParser):
                 rule.index = index
                 self.__rules.append(rule)
                 index += 1
-
 """
 ****************************************************************
         File format for rules and SParseTable:
