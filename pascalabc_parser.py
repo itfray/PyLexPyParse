@@ -3,7 +3,9 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> 'program' ID ';'
+        program -> 'program' ID ';' uses;
+        uses -> 'uses' ID ';' |
+        ε
         """
 # RULES = """
 #         program -> 'program' ID ';' usess;

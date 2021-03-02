@@ -834,17 +834,17 @@ class SParser(ISParser):
         flag = token.value != self.end_term     # if there is still tokens
         msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
         while flag:
-            if token.kind in self.tokens:  # transform token to term
-                term = token.kind
-            elif token.value in (self.end_term, self.empty_term):
+            if token.value in (self.end_term, self.empty_term):
                 term = token.value
             else:
-                term = self.term_segreg[0] + token.value + \
-                       self.term_segreg[-1]
-            if token.value not in (self.end_term, self.empty_term):
                 last_lex = token.value
                 nline_lex = self.__lexer.num_line
                 ncol_lex = self.__lexer.num_column
+                if token.kind in self.tokens:       # transform token to term
+                    term = token.kind
+                else:
+                    term = self.term_segreg[0] + token.value + \
+                           self.term_segreg[-1]
             try:
                 # get cell of matrix of syntax analysis
                 cell = self.__sparse_tab.cell_hdr(st_stack[-1], term)
