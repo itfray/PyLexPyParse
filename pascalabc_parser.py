@@ -46,12 +46,9 @@ if __name__ == "__main__":
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
     stmt = """
            program train;
+           uses GraphABC, JopaSuka;
+           uses Nahui;
            """
-#     stmt = """
-#            program train;
-#            uses GraphABC, JopaSuka;
-#            uses Nahui;
-#            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
                           specification=SPECIFICATION,

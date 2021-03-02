@@ -868,16 +868,25 @@ class SParser(ISParser):
                 rule = self.__rules[cell.value]  # roll up by rule
                 if len(rule.value) > 1:
                     ibuf = len(buf) - len(rule.value)  # index of first element for roll up
-                    node = Node()
+                    childs = []
+                    child = None
                     for i in range(len(rule.value)):
                         child = buf.pop(ibuf)
                         st_stack.pop(-1)
                         if not child.value is None and\
                            child.value.value == self.empty_term:
                             continue
-                        child.parent = node
-                        node.childs.append(child)   # add elements as child nodes
-                    buf.append(node)                # replace elements to new node
+                        childs.append(child)
+                    if len(childs) > 1:
+                        node = Node()
+                        for child in childs:                # add elements as child nodes
+                            node.childs.append(child)
+                            child.parent = node
+                        buf.append(node)                    # replace elements to new node
+                    elif len(childs) == 1:
+                        buf.append(childs[0])                # replace elements to new node
+                    else:
+                        buf.append(child)
                 else:
                     st_stack.pop(-1)
                 try:
