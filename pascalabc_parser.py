@@ -11,9 +11,8 @@ RULES = """
         usess -> usess uses |
                  uses;
         uses -> 'uses' modules ';';
-        modules -> modules ',' module |
-                   module;
-        module -> ID
+        modules -> modules ',' ID |
+                   ID
         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
@@ -62,7 +61,6 @@ if __name__ == "__main__":
                      goal_nterm=GOAL_NTERM,
                      end_term=END_TERM,
                      empty_term=EMPTY_TERM,
-
                      parsing_of_rules=RULES)
     print(parser.rules)
     parser.create_sparse_tab()
