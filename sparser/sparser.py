@@ -787,8 +787,8 @@ class SParser(ISParser):
     FILE_KEYWORD_BEFORE_RULES = "RULES"
     FILE_KEYWORD_BEFORE_HEADERS = "HDRS"
     FILE_KEYWORD_BEFORE_TABLE = "STAB"
-    __symbols_tab: dict
-    __symbol_ids_tab: dict
+    __sid2symbol_tab: dict
+    __symbol2sid_tab: dict
     __rules: list                           # rules of grammar
     __tokens: tuple                         # tokens
     __goal_nterm: int                       # goal nterminal symbol
@@ -825,42 +825,48 @@ class SParser(ISParser):
             self.goal_nterm = goal_nterm
 
     def __init_symbols_tab(self):
-        self.__symbol_ids_tab = {}
-        self.__symbols_tab = {}
+        self.__symbol2sid_tab = {}
+        self.__sid2symbol_tab = {}
 
     def __clear_symbols_tab(self):
-        self.__symbols_tab.clear()
-        self.__symbol_ids_tab.clear()
+        self.__sid2symbol_tab.clear()
+        self.__symbol2sid_tab.clear()
 
-    def __add_symbols_tab(self, symbol: str):
-        if symbol not in self.__symbol_ids_tab:
+    def __add_symbol_to_tab(self, symbol: str):
+        if symbol not in self.__symbol2sid_tab:
             min_sid = 0
-            if len(self.__symbols_tab) == self.MAX_SID - min_sid + 1:
+            if len(self.__sid2symbol_tab) == self.MAX_SID - min_sid + 1:
                 raise MemoryError('Symbol table in SParser is full!!!')
             new_sid = lambda: random.randint(min_sid, self.MAX_SID)
             sid = new_sid()
-            while sid in self.__symbols_tab:
+            while sid in self.__sid2symbol_tab:
                 sid = new_sid()
-            self.__symbol_ids_tab[symbol] = sid
-            self.__symbols_tab[sid] = symbol
+            self.__symbol2sid_tab[symbol] = sid
+            self.__sid2symbol_tab[sid] = symbol
 
-    def __remove_symbols_tab(self, symbol: str):
-        if symbol in self.__symbol_ids_tab:
-            sid = self.__symbol_ids_tab[symbol]
-            self.__symbol_ids_tab.pop(symbol)
-            self.__symbols_tab.pop(sid)
+    def __del_symbol_frm_tab(self, symbol: str):
+        if symbol in self.__symbol2sid_tab:
+            sid = self.__symbol2sid_tab[symbol]
+            self.__symbol2sid_tab.pop(symbol)
+            self.__sid2symbol_tab.pop(sid)
 
-    def __remove_symbol_ids_tab(self, sid: int):
-        if sid in self.__symbols_tab:
-            symbol = self.__symbols_tab[sid]
-            self.__symbols_tab.pop(sid)
-            self.__symbol_ids_tab.pop(symbol)
+    def __del_sid_frm_tab(self, sid: int):
+        if sid in self.__sid2symbol_tab:
+            symbol = self.__sid2symbol_tab[sid]
+            self.__sid2symbol_tab.pop(sid)
+            self.__symbol2sid_tab.pop(symbol)
+
+    def symbol2sid_tab(self):
+        return self.__symbol2sid_tab.copy()
+
+    def sid2symbol_tab(self):
+        return self.__sid2symbol_tab.copy()
 
     def symbol(self, sid: int) -> str:
-        return self.__symbols_tab.get(sid, None)
+        return self.__sid2symbol_tab.get(sid, None)
 
     def sid(self, symbol: str) -> int:
-        return self.__symbol_ids_tab.get(symbol, None)
+        return self.__symbol2sid_tab.get(symbol, None)
 
     def has_sparse_tab(self)-> bool:
         """
@@ -920,7 +926,7 @@ class SParser(ISParser):
 
     def clear_tokens(self):
         for sid_tok in self.__tokens:
-            self.__remove_symbol_ids_tab(sid_tok)
+            self.__del_sid_frm_tab(sid_tok)
         self.__tokens = tuple()
 
     @property
@@ -929,7 +935,7 @@ class SParser(ISParser):
         Get lexemes of language
         :return:
         """
-        return tuple(self.__symbols_tab[sid_tok] for sid_tok in self.__tokens)
+        return tuple(self.__sid2symbol_tab[sid_tok] for sid_tok in self.__tokens)
 
     @tokens.setter
     def tokens(self, value: tuple)-> None:
@@ -944,15 +950,15 @@ class SParser(ISParser):
         self.clear_tokens()
         tokens = []
         for token in value:
-            self.__add_symbols_tab(token)
-            tokens.append(self.__symbol_ids_tab[token])
+            self.__add_symbol_to_tab(token)
+            tokens.append(self.__symbol2sid_tab[token])
         self.__tokens = tuple(tokens)
 
     def clear_rules(self):
         for rule in self.__rules:
-            self.__remove_symbol_ids_tab(rule.key)
+            self.__del_sid_frm_tab(rule.key)
             for val in rule.value:
-                self.__remove_symbol_ids_tab(val)
+                self.__del_sid_frm_tab(val)
         self.__rules.clear()
 
     @property
@@ -964,8 +970,8 @@ class SParser(ISParser):
         rules = []
         for ind_rule in self.__rules:
             rule = Rule()
-            rule.key = self.__symbols_tab[ind_rule.key]
-            rule.value = tuple(self.__symbols_tab[val] for val in ind_rule.value)
+            rule.key = self.__sid2symbol_tab[ind_rule.key]
+            rule.value = tuple(self.__sid2symbol_tab[val] for val in ind_rule.value)
             rules.append(rule)
         return rules
 
@@ -984,12 +990,12 @@ class SParser(ISParser):
         for rule in value:
             ind_rule = IndRule()
             ind_rule.index = index
-            self.__add_symbols_tab(rule.key)
-            ind_rule.key = self.__symbol_ids_tab[rule.key]
+            self.__add_symbol_to_tab(rule.key)
+            ind_rule.key = self.__symbol2sid_tab[rule.key]
             ind_rule_value = []
             for val in rule.value:
-                self.__add_symbols_tab(val)
-                ind_rule_value.append(self.__symbol_ids_tab[val])
+                self.__add_symbol_to_tab(val)
+                ind_rule_value.append(self.__symbol2sid_tab[val])
             ind_rule.value = tuple(ind_rule_value)
             self.__rules.append(ind_rule)
 
@@ -1004,16 +1010,16 @@ class SParser(ISParser):
         for requir in specification.split(';\n'):
             key, values = requir.split('->', 1)
             key = key.strip()
-            self.__add_symbols_tab(key)
+            self.__add_symbol_to_tab(key)
             values = values.split('|\n')
             for value in values:
                 rule = IndRule()
                 rule.index = index
-                rule.key = self.__symbol_ids_tab[key]
+                rule.key = self.__symbol2sid_tab[key]
                 rule_value = []
                 for val in value.strip().split(' '):
-                    self.__add_symbols_tab(val)
-                    rule_value.append(self.__symbol_ids_tab[val])
+                    self.__add_symbol_to_tab(val)
+                    rule_value.append(self.__symbol2sid_tab[val])
                 rule.value = tuple(rule_value)
                 self.__rules.append(rule)
                 index += 1
@@ -1024,9 +1030,9 @@ class SParser(ISParser):
 
     @goal_nterm.setter
     def goal_nterm(self, value: str)-> None:
-        self.__remove_symbol_ids_tab(self.__goal_nterm)
-        self.__add_symbols_tab(value)
-        self.__goal_nterm = self.__symbol_ids_tab[value]
+        self.__del_sid_frm_tab(self.__goal_nterm)
+        self.__add_symbol_to_tab(value)
+        self.__goal_nterm = self.__symbol2sid_tab[value]
 
     @property
     def end_term(self) -> str:
@@ -1034,9 +1040,9 @@ class SParser(ISParser):
 
     @end_term.setter
     def end_term(self, value: str) -> None:
-        self.__remove_symbol_ids_tab(self.__end_term)
-        self.__add_symbols_tab(value)
-        self.__end_term = self.__symbol_ids_tab[value]
+        self.__del_sid_frm_tab(self.__end_term)
+        self.__add_symbol_to_tab(value)
+        self.__end_term = self.__symbol2sid_tab[value]
 
     @property
     def empty_term(self) -> str:
@@ -1044,9 +1050,9 @@ class SParser(ISParser):
 
     @empty_term.setter
     def empty_term(self, value: str) -> None:
-        self.__remove_symbol_ids_tab(self.__empty_term)
-        self.__add_symbols_tab(value)
-        self.__empty_term = self.__symbol_ids_tab[value]
+        self.__del_sid_frm_tab(self.__empty_term)
+        self.__add_symbol_to_tab(value)
+        self.__empty_term = self.__symbol2sid_tab[value]
 
     def __is_terminal(self, value: int)-> bool:
         """
@@ -1061,7 +1067,7 @@ class SParser(ISParser):
         elif value in self.__tokens:
             return True
         else:
-            svalue = self.__symbols_tab.get(value, None)
+            svalue = self.__sid2symbol_tab.get(value, None)
             if not svalue is None:
                 if len(svalue) > 1 and\
                    svalue[0] == self.term_segreg[0] and\
@@ -1085,9 +1091,9 @@ class SParser(ISParser):
                 rule = self.__rules[0]
             else:
                 raise EmptyRulesError("List of rules is empty!!!")
-        goal_nterm = self.__symbols_tab[rule.key] + self.__ext_goal_sign
-        self.__add_symbols_tab(goal_nterm)
-        goal_nterm = self.__symbol_ids_tab[goal_nterm]
+        goal_nterm = self.__sid2symbol_tab[rule.key] + self.__ext_goal_sign
+        self.__add_symbol_to_tab(goal_nterm)
+        goal_nterm = self.__symbol2sid_tab[goal_nterm]
         end_term = self.__end_term
         goal_rule = IndRule(goal_nterm, rule.key)
         goal_rule.index = -1
@@ -1099,7 +1105,7 @@ class SParser(ISParser):
                                               self.__is_terminal,
                                               goal_nterm,
                                               end_term)
-        self.__remove_symbol_ids_tab(goal_nterm)
+        self.__del_sid_frm_tab(goal_nterm)
 
     def parse(self) -> Node:
         """
@@ -1138,13 +1144,13 @@ class SParser(ISParser):
                 last_lex = self.lexer.lexemes[token.kind][token.value]
                 nline_lex = self.lexer.num_line
                 ncol_lex = self.lexer.num_column
-                sid_term = self.__symbol_ids_tab.get(self.lexer.kinds[token.kind], None)
+                sid_term = self.__symbol2sid_tab.get(self.lexer.kinds[token.kind], None)
                 if sid_term is None:
                     term = self.term_segreg[0] + \
                            self.lexer.lexemes[token.kind][token.value] + \
                            self.term_segreg[-1]
                     try:
-                        sid_term = self.__symbol_ids_tab[term]
+                        sid_term = self.__symbol2sid_tab[term]
                     except KeyError:
                         msg = msg_err.format(last_lex, nline_lex, ncol_lex)
                         raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
@@ -1164,7 +1170,7 @@ class SParser(ISParser):
                     token = next(curr_gen_token)        # generate new token
                 except StopIteration:
                     raise UncorrectSParseTabErr(f"Last looked cell in the " +
-                          f"SParseTable [{st_stack[-2]}]['{self.__symbols_tab[sid_term]}']")
+                          f"SParseTable [{st_stack[-2]}]['{self.__sid2symbol_tab[sid_term]}']")
             elif cell.action == cell.RUL:
                 added_empty = False
                 rule = self.__rules[cell.value]  # roll up by rule
@@ -1194,7 +1200,7 @@ class SParser(ISParser):
                 try:
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
                 except KeyError:
-                    raise UncorrectSParseTabErr(f"'{self.__symbols_tab[rule.key]}' " +
+                    raise UncorrectSParseTabErr(f"'{self.__sid2symbol_tab[rule.key]}' " +
                                                 "not found in the SParseTable!!!")
                 st_stack.append(cell.value)  # go to new state
                 buf[-1].kind = rule.key
