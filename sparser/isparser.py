@@ -3,6 +3,7 @@ from lexer import ILexer
 
 
 class Node:
+    kind = None
     value = None                        # node value
     parent = None                       # parent node
     __childs: list                      # child nodes

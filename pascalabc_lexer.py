@@ -96,7 +96,9 @@ if __name__ == "__main__":
     try:
         for token in lexer.tokens():
             print(f"{lexer.num_line}:{lexer.num_column}: " +
-                  f"{Token(lexer.kinds[token.kind], lexer.lexemes[token.kind][token.value])}")
+                  f"(kind='{lexer.kinds[token.kind]}'; " +
+                  f"value='{lexer.lexemes[token.kind][token.value]}'; " +
+                  f"id=[{token.kind},{token.value}])")
     except UnexceptedLexError as err:
         print(err)
     print(time() - t0, " sec")

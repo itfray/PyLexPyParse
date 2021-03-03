@@ -1,4 +1,5 @@
 import struct
+import random
 from lexer import ILexer, Token
 from .isparser import (ISParser, Node, SParserError,
                        NoneLexerError, ParseSyntaxError)
@@ -374,7 +375,7 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
                     lrpoints.append(new_lrp)          # add rule [B -> ●γ, b]
     return lrpoints
 
-def goto_LR1Point(lrpoints: list, value: str)-> list:
+def goto_LR1Point(lrpoints: list, value)-> list:
     """
     Calculate LR-points for GOTO-transition by specified value.
     GOTO_LR1Point([..., [A -> α●Xβ, a], ...], X) = [[A -> αX●β, a], ...]
@@ -685,8 +686,8 @@ def print_sparse_tab(tab: SParseTab, size_cell = 6):
     print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
 
 
-def create_sparse_tab(rules: list, lrstates: list, term_func,
-                      goal_nterm: int, end_term: int)-> SParseTab:
+def create_sparse_tab(rules: list, lrstates: list,
+                      term_func, goal_nterm, end_term)-> SParseTab:
     """
     Create SParse table.
     Creating by next rules:
@@ -776,41 +777,327 @@ class ReadingSTabFileErr(SParserError):
 
 
 class SParser(ISParser):
+    SID_BYTES = 8
+    MAX_SID = 2 ** (8 * SID_BYTES) - 1
     DEFAULT_TERM_SEGREG = ("'", "'")        # default terminal segregation
     DEFAULT_EXT_GOAL_SIGN = "'"             # default sign for designation extended goal
-    DEFAULT_GOAL_NTERM = ''                 # default goal nterminal
     DEFAULT_END_TERM = '⊥'                  # default end terminal
     DEFAULT_EMPTY_TERM = 'ε'                # default empty terminal
     FILE_KEYWORD_IN_START = "SPARSER"
     FILE_KEYWORD_BEFORE_RULES = "RULES"
     FILE_KEYWORD_BEFORE_HEADERS = "HDRS"
     FILE_KEYWORD_BEFORE_TABLE = "STAB"
+    __symbols_tab: dict
+    __symbol_ids_tab: dict
     __rules: list                           # rules of grammar
     __tokens: tuple                         # tokens
+    __goal_nterm: int                       # goal nterminal symbol
+    __end_term: int                         # end terminal symbol
+    __empty_term: int                       # empty terminal symbol
     __term_segreg: tuple                    # terminal segregation
     __ext_goal_sign: str                    # sign for designation extended goal
-    goal_nterm: str                         # goal nterminal symbol
-    end_term: str                           # end terminal symbol
-    empty_term: str                         # empty terminal symbol
     __sparse_tab: SParseTab                 # parsing table
-    __symbols_tab: list
-    __ids_tab: dict
 
     def __init__(self, **kwargs):
-        self.__symbols_tab = []
-        self.__ids_tab = {}
+        self.__init_symbols_tab()
+        self.__rules = list()
+        self.__tokens = tuple()
+        self.__goal_nterm = None
+        self.__end_term = None
+        self.__empty_term = None
         self.__sparse_tab = None
         self.lexer = kwargs.get("lexer", None)
-        self.tokens = kwargs.get("tokens", ())
         self.term_segreg = kwargs.get("term_segreg", self.DEFAULT_TERM_SEGREG)
-        self.goal_nterm = kwargs.get("goal_nterm", self.DEFAULT_GOAL_NTERM)
-        self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
-        self.empty_term = kwargs.get("empty_term", self.DEFAULT_EMPTY_TERM)
         self.__ext_goal_sign = self.DEFAULT_EXT_GOAL_SIGN
-        self.rules = kwargs.get("rules", [])
+        tokens = kwargs.get("tokens", None)
+        if not tokens is None:
+            self.tokens = tokens
+        rules = kwargs.get("rules", None)
+        if not rules is None:
+            self.rules = rules
         specification = kwargs.get("parsing_of_rules", None)
         if not specification is None and len(self.__rules) == 0:
             self.parse_rules(specification)
+        self.end_term = kwargs.get("end_term", self.DEFAULT_END_TERM)
+        self.empty_term = kwargs.get("empty_term", self.DEFAULT_EMPTY_TERM)
+        goal_nterm = kwargs.get("goal_nterm", None)
+        if not goal_nterm is None:
+            self.goal_nterm = goal_nterm
+
+    def __init_symbols_tab(self):
+        self.__symbol_ids_tab = {}
+        self.__symbols_tab = {}
+
+    def __clear_symbols_tab(self):
+        self.__symbols_tab.clear()
+        self.__symbol_ids_tab.clear()
+
+    def __add_symbols_tab(self, symbol: str):
+        if symbol not in self.__symbol_ids_tab:
+            min_sid = 0
+            if len(self.__symbols_tab) == self.MAX_SID - min_sid + 1:
+                raise MemoryError('Symbol table in SParser is full!!!')
+            new_sid = lambda: random.randint(min_sid, self.MAX_SID)
+            sid = new_sid()
+            while sid in self.__symbols_tab:
+                sid = new_sid()
+            self.__symbol_ids_tab[symbol] = sid
+            self.__symbols_tab[sid] = symbol
+
+    def __remove_symbols_tab(self, symbol: str):
+        if symbol in self.__symbol_ids_tab:
+            sid = self.__symbol_ids_tab[symbol]
+            self.__symbol_ids_tab.pop(symbol)
+            self.__symbols_tab.pop(sid)
+
+    def __remove_symbol_ids_tab(self, sid: int):
+        if sid in self.__symbols_tab:
+            symbol = self.__symbols_tab[sid]
+            self.__symbols_tab.pop(sid)
+            self.__symbol_ids_tab.pop(symbol)
+
+    def symbol(self, sid: int) -> str:
+        return self.__symbols_tab.get(sid, None)
+
+    def sid(self, symbol: str) -> int:
+        return self.__symbol_ids_tab.get(symbol, None)
+
+    def has_sparse_tab(self)-> bool:
+        """
+        Has Parser SParseTable?
+        :return: True or False
+        """
+        if not self.__sparse_tab is None:
+            return self.__sparse_tab.rows > 0
+        return False
+
+    def has_rules(self)-> bool:
+        """
+        Has Parser rules?
+        :return: True or False
+        """
+        return len(self.__rules) > 0
+
+    @property
+    def lexer(self)-> ILexer:
+        """
+        Get lexer
+        :return: lexer
+        """
+        return self.__lexer
+
+    @lexer.setter
+    def lexer(self, value: ILexer)-> None:
+        """
+        Set lexer
+        :param value: lexer
+        :return: None
+        """
+        self.__lexer = value
+
+    @property
+    def term_segreg(self)-> tuple:
+        """
+        Get terminal segregation.
+        Terminal segregation need
+        that define terminal symbols.
+        Example: if term_segreg = ("'", "'")
+        then "'t'" is terminal symbol.
+        :return: tuple of symbols
+                 for terminal segregation
+        """
+        return self.__term_segreg
+
+    @term_segreg.setter
+    def term_segreg(self, value: tuple)-> None:
+        """
+        Set terminal segregation.
+        :param value: tuple of symbols
+                      for terminal segregation
+        :return: None
+        """
+        self.__term_segreg = tuple(value[i] for i in range(2))
+
+    def clear_tokens(self):
+        for sid_tok in self.__tokens:
+            self.__remove_symbol_ids_tab(sid_tok)
+        self.__tokens = tuple()
+
+    @property
+    def tokens(self)-> tuple:
+        """
+        Get lexemes of language
+        :return:
+        """
+        return tuple(self.__symbols_tab[sid_tok] for sid_tok in self.__tokens)
+
+    @tokens.setter
+    def tokens(self, value: tuple)-> None:
+        """
+        Set lexemes of language
+        :param value: list of lexemes
+        :return: None
+        :raise: ValueError
+        """
+        if value is None:
+            raise ValueError("Rules must be not None!!!")
+        self.clear_tokens()
+        tokens = []
+        for token in value:
+            self.__add_symbols_tab(token)
+            tokens.append(self.__symbol_ids_tab[token])
+        self.__tokens = tuple(tokens)
+
+    def clear_rules(self):
+        for rule in self.__rules:
+            self.__remove_symbol_ids_tab(rule.key)
+            for val in rule.value:
+                self.__remove_symbol_ids_tab(val)
+        self.__rules.clear()
+
+    @property
+    def rules(self) -> list:
+        """
+        Get rules of grammar.
+        :return: list of grammar rules
+        """
+        rules = []
+        for ind_rule in self.__rules:
+            rule = Rule()
+            rule.key = self.__symbols_tab[ind_rule.key]
+            rule.value = tuple(self.__symbols_tab[val] for val in ind_rule.value)
+            rules.append(rule)
+        return rules
+
+    @rules.setter
+    def rules(self, value: list) -> None:
+        """
+        Set rules of grammar.
+        :param value: list of grammar rules
+        :return: None
+        :raise: ValueError
+        """
+        if value is None:
+            raise ValueError("Rules must be not None!!!")
+        self.clear_rules()
+        index = 0
+        for rule in value:
+            ind_rule = IndRule()
+            ind_rule.index = index
+            self.__add_symbols_tab(rule.key)
+            ind_rule.key = self.__symbol_ids_tab[rule.key]
+            ind_rule_value = []
+            for val in rule.value:
+                self.__add_symbols_tab(val)
+                ind_rule_value.append(self.__symbol_ids_tab[val])
+            ind_rule.value = tuple(ind_rule_value)
+            self.__rules.append(ind_rule)
+
+    def parse_rules(self, specification: str) -> None:
+        """
+        Parses and sets rules of grammar.
+        :param specification: string of grammar rules
+        :return: None
+        """
+        self.clear_rules()
+        index = 0
+        for requir in specification.split(';\n'):
+            key, values = requir.split('->', 1)
+            key = key.strip()
+            self.__add_symbols_tab(key)
+            values = values.split('|\n')
+            for value in values:
+                rule = IndRule()
+                rule.index = index
+                rule.key = self.__symbol_ids_tab[key]
+                rule_value = []
+                for val in value.strip().split(' '):
+                    self.__add_symbols_tab(val)
+                    rule_value.append(self.__symbol_ids_tab[val])
+                rule.value = tuple(rule_value)
+                self.__rules.append(rule)
+                index += 1
+
+    @property
+    def goal_nterm(self)-> str:
+        return self.symbol(self.__goal_nterm)
+
+    @goal_nterm.setter
+    def goal_nterm(self, value: str)-> None:
+        self.__remove_symbol_ids_tab(self.__goal_nterm)
+        self.__add_symbols_tab(value)
+        self.__goal_nterm = self.__symbol_ids_tab[value]
+
+    @property
+    def end_term(self) -> str:
+        return self.symbol(self.__end_term)
+
+    @end_term.setter
+    def end_term(self, value: str) -> None:
+        self.__remove_symbol_ids_tab(self.__end_term)
+        self.__add_symbols_tab(value)
+        self.__end_term = self.__symbol_ids_tab[value]
+
+    @property
+    def empty_term(self) -> str:
+        return self.symbol(self.__empty_term)
+
+    @empty_term.setter
+    def empty_term(self, value: str) -> None:
+        self.__remove_symbol_ids_tab(self.__empty_term)
+        self.__add_symbols_tab(value)
+        self.__empty_term = self.__symbol_ids_tab[value]
+
+    def __is_terminal(self, value: int)-> bool:
+        """
+        Predicate for definition terminal symbols of grammar
+        :param value: symbol for check
+        :return: result of check
+        """
+        svalue = self.__symbols_tab[value]
+        if value == self.__end_term:
+            return True
+        elif value == self.__empty_term:
+            return True
+        elif value in self.__tokens:
+            return True
+        elif len(svalue) > 1 and\
+             svalue[0] == self.term_segreg[0] and\
+             svalue[-1] == self.term_segreg[-1]:
+            return True
+        return False
+
+    def create_sparse_tab(self)-> None:
+        """
+        Creates parsing table for parser
+        :return: None
+        """
+        rule = None
+        if not self.symbol(self.__goal_nterm) is None:
+            for r in self.__rules:              # find goal rule
+                if r.key == self.__goal_nterm:
+                    rule = r
+                    break
+        if rule is None:
+            if len(self.__rules) > 0:
+                rule = self.__rules[0]
+            else:
+                raise EmptyRulesError("List of rules is empty!!!")
+        goal_nterm = self.__symbols_tab[rule.key] + self.__ext_goal_sign
+        self.__add_symbols_tab(goal_nterm)
+        goal_nterm = self.__symbol_ids_tab[goal_nterm]
+        end_term = self.__end_term
+        goal_rule = IndRule(goal_nterm, rule.key)
+        goal_rule.index = -1
+        ext_rules = [goal_rule] + self.__rules.copy()                           # create extended grammar
+        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[end_term])           # create goal LR1-point
+        lrstates = create_LR1States(ext_rules, self.__is_terminal, lrpt)        # create LR1-states of LR1 state machine
+        lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
+        self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,              # create parsing table
+                                              self.__is_terminal,
+                                              goal_nterm,
+                                              end_term)
+        self.__remove_symbol_ids_tab(goal_nterm)
 
     def parse(self) -> Node:
         """
@@ -842,27 +1129,29 @@ class SParser(ISParser):
         added_empty = False
         while flag:
             if token.kind == end_term:
-                iterm = self.__ids_tab[self.end_term]
+                iterm = self.__symbol_ids_tab[self.end_term]
             elif token.kind == empty_term:
-                iterm = self.__ids_tab[self.empty_term]
+                iterm = self.__symbol_ids_tab[self.empty_term]
             else:
                 last_lex = self.lexer.lexemes[token.kind][token.value]
                 nline_lex = self.lexer.num_line
                 ncol_lex = self.lexer.num_column
-                if self.lexer.kinds[token.kind] in self.tokens:       # transform token to term
-                    iterm = self.__ids_tab[self.lexer.kinds[token.kind]]
-                else:
-                    term = self.term_segreg[0] + \
-                           self.lexer.lexemes[token.kind][token.value] + \
-                           self.term_segreg[-1]
-                    iterm = self.__ids_tab[term]
-            try:
-                # get cell of matrix of syntax analysis
-                cell = self.__sparse_tab.cell_hdr(st_stack[-1], iterm)
-            except KeyError:
-                msg = msg_err.format(last_lex, nline_lex, ncol_lex)
-                raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
-                                       num_column=ncol_lex, message=msg)
+                try:
+                    iterm = self.__symbol_ids_tab.get(self.lexer.kinds[token.kind], None)
+                    # if iterm is None:
+                    if self.lexer.kinds[token.kind] in self.tokens:  # transform token to term
+                        iterm = self.__symbol_ids_tab[self.lexer.kinds[token.kind]]
+                    else:
+                        term = self.term_segreg[0] + \
+                               self.lexer.lexemes[token.kind][token.value] + \
+                               self.term_segreg[-1]
+                        iterm = self.__symbol_ids_tab[term]
+                except KeyError:
+                    msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                    raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
+                                           num_column=ncol_lex, message=msg)
+            # get cell of matrix of syntax analysis
+            cell = self.__sparse_tab.cell_hdr(st_stack[-1], iterm)
             if cell.action == cell.SHF:
                 added_empty = False
                 st_stack.append(cell.value)    # go to a new state
@@ -917,75 +1206,6 @@ class SParser(ISParser):
                     curr_gen_token = merge_ranges(range_objs(token), gen_token)
                     token = Token(empty_term, empty_term)
         return root
-
-    def is_terminal(self, value: int)-> bool:
-        """
-        Predicate for definition terminal symbols of grammar
-        :param value: symbol for check
-        :return: result of check
-        """
-        svalue = self.__symbols_tab[value]
-        if value == self.__ids_tab[self.end_term]:
-            return True
-        elif value == self.__ids_tab[self.empty_term]:
-            return True
-        elif len(svalue) > 1 and\
-             svalue[0] == self.term_segreg[0] and\
-             svalue[-1] == self.term_segreg[-1]:
-            return True
-        for token in self.__tokens:
-            if value == self.__ids_tab[token]:
-                return True
-        return False
-
-    def create_sparse_tab(self)-> None:
-        """
-        Creates parsing table for parser
-        :return: None
-        """
-        rule = None
-        if not self.__ids_tab.get(self.goal_nterm, None) is None:
-            for r in self.__rules:              # find goal rule
-                if r.key == self.__ids_tab[self.goal_nterm]:
-                    rule = r
-                    break
-        if rule is None:
-            if len(self.__rules) > 0:
-                rule = self.__rules[0]
-            else:
-                raise EmptyRulesError("List of rules is empty!!!")
-        goal_nterm = self.__ids_tab[rule.key] + self.__ext_goal_sign
-        self.__add_in_symbols_tab(goal_nterm)
-        goal_nterm = self.__ids_tab[goal_nterm]
-        goal_rule = IndRule(goal_nterm, rule.key)
-        goal_rule.index = -1
-        ext_rules = [goal_rule] + self.__rules.copy()                           # create extended grammar
-        self.__add_in_symbols_tab(self.end_term)
-        self.__add_in_symbols_tab(self.empty_term)
-        end_term = self.__ids_tab[self.end_term]
-        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[end_term])           # create goal LR1-point
-        lrstates = create_LR1States(ext_rules, self.is_terminal, lrpt)          # create LR1-states of LR1 state machine
-        lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
-        self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,              # create parsing table
-                                              self.is_terminal,
-                                              goal_nterm,
-                                              end_term)
-
-    def has_sparse_tab(self)-> bool:
-        """
-        Has Parser SParseTable?
-        :return: True or False
-        """
-        if not self.__sparse_tab is None:
-            return self.__sparse_tab.rows > 0
-        return False
-
-    def has_rules(self)-> bool:
-        """
-        Has Parser rules?
-        :return: True or False
-        """
-        return len(self.__rules) > 0
 
     def write_stab_to_file(self, filename: str, buffering = -1)-> None:
         """
@@ -1083,141 +1303,6 @@ class SParser(ISParser):
             self.__rules.clear()
             self.__sparse_tab = None
             raise ReadingSTabFileErr(read_err_msg + f" struct.error: {err}")
-
-    @property
-    def lexer(self)-> ILexer:
-        """
-        Get lexer
-        :return: lexer
-        """
-        return self.__lexer
-
-    @lexer.setter
-    def lexer(self, value: ILexer)-> None:
-        """
-        Set lexer
-        :param value: lexer
-        :return: None
-        """
-        self.__lexer = value
-
-    @property
-    def term_segreg(self)-> tuple:
-        """
-        Get terminal segregation.
-        Terminal segregation need
-        that define terminal symbols.
-        Example: if term_segreg = ("'", "'")
-        then "'t'" is terminal symbol.
-        :return: tuple of symbols
-                 for terminal segregation
-        """
-        return self.__term_segreg
-
-    @term_segreg.setter
-    def term_segreg(self, value: tuple)-> None:
-        """
-        Set terminal segregation.
-        :param value: tuple of symbols
-                      for terminal segregation
-        :return: None
-        """
-        self.__term_segreg = tuple(value[i] for i in range(2))
-
-    @property
-    def tokens(self)-> tuple:
-        """
-        Get lexemes of language
-        :return:
-        """
-        return self.__tokens
-
-    @tokens.setter
-    def tokens(self, value: tuple)-> None:
-        """
-        Set lexemes of language
-        :param value: list of lexemes
-        :return: None
-        :raise: ValueError
-        """
-        if value is None:
-            raise ValueError("Rules must be not None!!!")
-        self.__tokens = value
-
-    def __clear_symbols_tab(self):
-        self.__symbols_tab.clear()
-        self.__ids_tab.clear()
-
-    def __add_in_symbols_tab(self, symbol: str):
-        if symbol not in self.__ids_tab:
-            ind = len(self.__ids_tab)
-            self.__ids_tab[symbol] = ind
-            self.__symbols_tab.append(symbol)
-
-    @property
-    def rules(self)-> list:
-        """
-        Get rules of grammar.
-        :return: list of grammar rules
-        """
-        rules = []
-        for ind_rule in self.__rules:
-            rule = Rule()
-            rule.key = self.__symbols_tab[ind_rule.key]
-            rule.value = tuple(self.__symbols_tab[val] for val in ind_rule.value)
-            rules.append(rule)
-        return rules
-
-    @rules.setter
-    def rules(self, value: list)-> None:
-        """
-        Set rules of grammar.
-        :param value: list of grammar rules
-        :return: None
-        :raise: ValueError
-        """
-        if value is None:
-            raise ValueError("Rules must be not None!!!")
-        self.__clear_symbols_tab()
-        self.__rules = []
-        index = 0
-        for rule in value:
-            ind_rule = IndRule()
-            ind_rule.index = index
-            self.__add_in_symbols_tab(rule.key)
-            ind_rule.key = self.__ids_tab[rule.key]
-            ind_rule_value = []
-            for val in rule.value:
-                self.__add_in_symbols_tab(val)
-                ind_rule_value.append(self.__ids_tab[val])
-            ind_rule.value = tuple(ind_rule_value)
-            self.__rules.append(ind_rule)
-
-    def parse_rules(self, specification: str)-> None:
-        """
-        Parses and sets rules of grammar.
-        :param specification: string of grammar rules
-        :return: None
-        """
-        self.__clear_symbols_tab()
-        self.__rules = []
-        index = 0
-        for requir in specification.split(';\n'):
-            key, values = requir.split('->', 1)
-            key = key.strip()
-            self.__add_in_symbols_tab(key)
-            values = values.split('|\n')
-            for value in values:
-                rule = IndRule()
-                rule.index = index
-                rule.key = self.__ids_tab[key]
-                rule_value = []
-                for val in value.strip().split(' '):
-                    self.__add_in_symbols_tab(val)
-                    rule_value.append(self.__ids_tab[val])
-                rule.value = tuple(rule_value)
-                self.__rules.append(rule)
-                index += 1
 """
 ****************************************************************
         File format for rules and SParseTable:
@@ -1286,7 +1371,9 @@ class SParser(ISParser):
 """
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    pass
+    print(SParser.MAX_SID)
 #     print('start test1...')
 #     GOAL_NTERM = "S"
 #     END_TERM = '⊥'

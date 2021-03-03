@@ -1,4 +1,4 @@
-from .lexer import Lexer, UnexceptedLexError, NoneDataReaderError
+from .lexer import Lexer, UnexceptedLexError
 import re
 from collections import namedtuple
 

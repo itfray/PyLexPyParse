@@ -1,4 +1,4 @@
-from .ilexer import (ILexer, Token, LexerError, UnexceptedLexError,
+from .ilexer import (ILexer, Token, UnexceptedLexError,
                      NoneDataReaderError, IStrReader)
 import re
 
