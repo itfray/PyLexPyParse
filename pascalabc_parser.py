@@ -56,6 +56,7 @@ if __name__ == "__main__":
     except UnexceptedLexError as err:
         print(err)
     print(time() - t0, " sec")
+    print()
 
     stab_filename = STAB_FILENAME
     parser = SParser(lexer=lexer,
@@ -65,6 +66,7 @@ if __name__ == "__main__":
                      empty_term=EMPTY_TERM,
                      parsing_of_rules=RULES)
     print(parser.rules)
+    print()
     parser.create_sparse_tab()
     t0 = time()
     node = parser.parse()
