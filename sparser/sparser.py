@@ -842,21 +842,23 @@ class SParser(ISParser):
         added_empty = False
         while flag:
             if token.kind == end_term:
-                term = self.__ids_tab[self.end_term]
+                iterm = self.__ids_tab[self.end_term]
             elif token.kind == empty_term:
-                term = self.__ids_tab[self.empty_term]
+                iterm = self.__ids_tab[self.empty_term]
             else:
-                last_lex = token.value
-                nline_lex = self.__lexer.num_line
-                ncol_lex = self.__lexer.num_column
-                if token.kind in self.tokens:       # transform token to term
-                    term = token.kind
+                last_lex = self.lexer.lexemes[token.kind][token.value]
+                nline_lex = self.lexer.num_line
+                ncol_lex = self.lexer.num_column
+                if self.lexer.kinds[token.kind] in self.tokens:       # transform token to term
+                    iterm = self.__ids_tab[self.lexer.kinds[token.kind]]
                 else:
-                    term = self.term_segreg[0] + token.value + \
+                    term = self.term_segreg[0] + \
+                           self.lexer.lexemes[token.kind][token.value] + \
                            self.term_segreg[-1]
+                    iterm = self.__ids_tab[term]
             try:
                 # get cell of matrix of syntax analysis
-                cell = self.__sparse_tab.cell_hdr(st_stack[-1], term)
+                cell = self.__sparse_tab.cell_hdr(st_stack[-1], iterm)
             except KeyError:
                 msg = msg_err.format(last_lex, nline_lex, ncol_lex)
                 raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
@@ -869,7 +871,7 @@ class SParser(ISParser):
                     token = next(curr_gen_token)        # generate new token
                 except StopIteration:
                     raise UncorrectSParseTabErr(f"Last looked cell in the " +
-                                                f"SParseTable [{st_stack[-2]}]['{term}']")
+                                                f"SParseTable [{st_stack[-2]}]['{self.__symbols_tab[iterm]}']")
             elif cell.action == cell.RUL:
                 added_empty = False
                 rule = self.__rules[cell.value]  # roll up by rule
@@ -881,7 +883,7 @@ class SParser(ISParser):
                         child = buf.pop(ibuf)
                         st_stack.pop(-1)
                         if not child.value is None and\
-                           child.value.value == self.empty_term:
+                           child.value.kind == empty_term:
                             continue
                         childs.append(child)
                     if len(childs) > 1:
@@ -899,7 +901,8 @@ class SParser(ISParser):
                 try:
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
                 except KeyError:
-                    raise UncorrectSParseTabErr(f"'{rule.key}' not found in the SParseTable!!!")
+                    raise UncorrectSParseTabErr(f"'{self.__symbols_tab[rule.key]}' " +
+                                                "not found in the SParseTable!!!")
                 st_stack.append(cell.value)  # go to new state
             elif cell.action == cell.ACC:
                 root = buf[-1]  # set root
@@ -912,7 +915,7 @@ class SParser(ISParser):
                 else:
                     added_empty = True
                     curr_gen_token = merge_ranges(range_objs(token), gen_token)
-                    token = Token(self.empty_term, self.empty_term)
+                    token = Token(empty_term, empty_term)
         return root
 
     def is_terminal(self, value: int)-> bool:
