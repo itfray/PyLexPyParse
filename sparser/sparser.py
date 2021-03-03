@@ -29,9 +29,9 @@ class Rule:
     """
     Rule is rule of grammar of language
     """
-    key: str                             # key of rule, string
-    __value: tuple                       # value of rule, set of strings
-    def __init__(self, key = "", *value):
+    key = None                             # key of rule
+    __value: tuple                       # value of rule
+    def __init__(self, key = None, *value):
         self.key = key
         self.value = value
 
@@ -39,7 +39,7 @@ class Rule:
     def value(self)-> tuple:
         """
         Get value
-        :return: value, tuple of strings
+        :return: value, tuple of values
         """
         return self.__value
 
@@ -47,7 +47,7 @@ class Rule:
     def value(self, val: tuple)-> None:
         """
         Set value
-        :param val: value, tuple of strings
+        :param val: value, tuple of values
         :return: None
         :raise: ValueError
         """
@@ -62,10 +62,10 @@ class Rule:
         return not self == other
 
     def __str__(self):
-        return self.key + " -> " + " ".join(self.value)
+        return str(self.key) + " -> " + " ".join(str(val) for val in self.value)
 
     def __repr__(self):
-        return f"Rules(key='{self.key}', value={self.value})"
+        return f"Rules(key={str(self.key)}, value={self.value})"
 
 
 class IndRule(Rule):
@@ -73,7 +73,7 @@ class IndRule(Rule):
     IndRule is rule of grammar of language with index
     """
     index: int                        # index of rule
-    def __init__(self, key = "", *value):
+    def __init__(self, key = None, *value):
         super().__init__(key, *value)
         self.index = 0
 
@@ -148,11 +148,11 @@ class LR0Point:
         elif self.iptr < 0:
             return self.rule.__str__()
         else:
-            ans = self.rule.key + " -> "
+            ans = str(self.rule.key) + " -> "
             for i in range(len(self.rule.value)):
                 if i == self.iptr:
                     ans += "●"
-                ans += self.rule.value[i]
+                ans += str(self.rule.value[i])
                 if i < len(self.rule.value) - 1:
                     ans += " "
             if self.iptr == len(self.rule.value):
@@ -195,7 +195,7 @@ class LR1Point(LR0Point):
     def __str__(self):
         ans = "[" + super().__str__() + ", "
         for i in range(len(self.lookahead)):
-            ans += self.lookahead[i]
+            ans += str(self.lookahead[i])
             if i < len(self.lookahead) - 1:
                 ans += '/'
         ans += "]"
@@ -300,17 +300,17 @@ class LRState:
         if len(self.goto) > 0:
             ans += "\n{ "
             for key in self.goto:
-                ans += key + "; "
+                ans += str(key) + "; "
             ans += "}"
         if len(self.rgoto) > 0:
             ans += "\nr{ "
             for key in self.rgoto:
-                ans += key + "; "
+                ans += str(key) + "; "
             ans += "}"
         return ans
 
 
-def first_term(rules: list, terminal_func, value: str)-> list:
+def first_term(rules: list, terminal_func, value)-> list:
     """
     Calculate set of FIRST(value) for specified value.
     FIRST(A) - the set of terminal characters that begin
@@ -360,9 +360,9 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
         rule = lrpoint.rule
         if iptr < 0 or iptr > len(rule.value) - 1:
             continue
-        B = rule.value[iptr]                          # calculate B
+        B = rule.value[iptr]                            # calculate B
         b = rule.value[iptr + 1] \
-            if iptr < len(rule.value) - 1 else ''     # calculate β
+            if iptr < len(rule.value) - 1 else None     # calculate β
         firstb = first_term(rules, terminal_func, b)  # calculate FIRST(β)
         if len(firstb) == 0:
             firstb += lrpoint.lookahead               # calculate FIRST(a)
@@ -618,11 +618,11 @@ class SParseTab:
         """
         return self.__content[irow][icol]
 
-    def cell_hdr(self, irow: int, ncol: str)-> CellSParseTab:
+    def cell_hdr(self, irow: int, ncol)-> CellSParseTab:
         """
         Get cell by index of row and name of column
         :param irow: index of row
-        :param ncol: name of column
+        :param ncol: key of column
         :return: cell
         """
         return self.__content[irow][self.__headers[ncol]]
@@ -686,7 +686,7 @@ def print_sparse_tab(tab: SParseTab, size_cell = 6):
 
 
 def create_sparse_tab(rules: list, lrstates: list, term_func,
-                      goal_nterm: str, end_term: str)-> SParseTab:
+                      goal_nterm: int, end_term: int)-> SParseTab:
     """
     Create SParse table.
     Creating by next rules:
@@ -793,8 +793,12 @@ class SParser(ISParser):
     end_term: str                           # end terminal symbol
     empty_term: str                         # empty terminal symbol
     __sparse_tab: SParseTab                 # parsing table
+    __symbols_tab: list
+    __ids_tab: dict
 
     def __init__(self, **kwargs):
+        self.__symbols_tab = []
+        self.__ids_tab = {}
         self.__sparse_tab = None
         self.lexer = kwargs.get("lexer", None)
         self.tokens = kwargs.get("tokens", ())
@@ -825,19 +829,22 @@ class SParser(ISParser):
         st_stack = [0]         # stack of states
         buf = []               # buffer tokens and nodes
         root = None            # root of parse tree
+        empty_term, end_term = range(-2, 0, -1)
         # create token generator
         # add end terminal how end token
         gen_token = merge_ranges(self.lexer.tokens(),
-                    range_objs(Token(self.end_term, self.end_term)))
+                    range_objs(Token(end_term, end_term)))
         curr_gen_token = gen_token
         token = next(curr_gen_token)                 # generate first token
         last_lex = ""                           # last looked lexeme
-        flag = token.value != self.end_term     # if there is still tokens
+        flag = token.value != end_term          # if there is still tokens
         msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
         added_empty = False
         while flag:
-            if token.value in (self.end_term, self.empty_term):
-                term = token.value
+            if token.kind == end_term:
+                term = self.__ids_tab[self.end_term]
+            elif token.kind == empty_term:
+                term = self.__ids_tab[self.empty_term]
             else:
                 last_lex = token.value
                 nline_lex = self.__lexer.num_line
@@ -908,24 +915,25 @@ class SParser(ISParser):
                     token = Token(self.empty_term, self.empty_term)
         return root
 
-    def is_terminal(self, value: str)-> bool:
+    def is_terminal(self, value: int)-> bool:
         """
         Predicate for definition terminal symbols of grammar
         :param value: symbol for check
         :return: result of check
         """
-        if value == self.end_term:
+        svalue = self.__symbols_tab[value]
+        if value == self.__ids_tab[self.end_term]:
             return True
-        elif value == self.empty_term:
+        elif value == self.__ids_tab[self.empty_term]:
             return True
-        elif value in self.__tokens:
+        elif len(svalue) > 1 and\
+             svalue[0] == self.term_segreg[0] and\
+             svalue[-1] == self.term_segreg[-1]:
             return True
-        elif len(value) > 1 and\
-             value[0] == self.term_segreg[0] and\
-             value[-1] == self.term_segreg[-1]:
-            return True
-        else:
-            return False
+        for token in self.__tokens:
+            if value == self.__ids_tab[token]:
+                return True
+        return False
 
     def create_sparse_tab(self)-> None:
         """
@@ -933,26 +941,32 @@ class SParser(ISParser):
         :return: None
         """
         rule = None
-        for r in self.__rules:              # find goal rule
-            if r.key == self.goal_nterm:
-                rule = r
-                break
+        if not self.__ids_tab.get(self.goal_nterm, None) is None:
+            for r in self.__rules:              # find goal rule
+                if r.key == self.__ids_tab[self.goal_nterm]:
+                    rule = r
+                    break
         if rule is None:
             if len(self.__rules) > 0:
                 rule = self.__rules[0]
             else:
-                return
-        goal_nterm = rule.key + self.__ext_goal_sign
+                raise EmptyRulesError("List of rules is empty!!!")
+        goal_nterm = self.__ids_tab[rule.key] + self.__ext_goal_sign
+        self.__add_in_symbols_tab(goal_nterm)
+        goal_nterm = self.__ids_tab[goal_nterm]
         goal_rule = IndRule(goal_nterm, rule.key)
         goal_rule.index = -1
         ext_rules = [goal_rule] + self.__rules.copy()                           # create extended grammar
-        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[self.end_term])      # create goal LR1-point
+        self.__add_in_symbols_tab(self.end_term)
+        self.__add_in_symbols_tab(self.empty_term)
+        end_term = self.__ids_tab[self.end_term]
+        lrpt = LR1Point(rule=goal_rule, iptr=0, lookahead=[end_term])           # create goal LR1-point
         lrstates = create_LR1States(ext_rules, self.is_terminal, lrpt)          # create LR1-states of LR1 state machine
         lrstates = states_LR1_to_LALR1(lrstates)                                # transform LR1-states to LALR1-states
         self.__sparse_tab = create_sparse_tab(ext_rules, lrstates,              # create parsing table
                                               self.is_terminal,
                                               goal_nterm,
-                                              self.end_term)
+                                              end_term)
 
     def has_sparse_tab(self)-> bool:
         """
@@ -1127,13 +1141,29 @@ class SParser(ISParser):
             raise ValueError("Rules must be not None!!!")
         self.__tokens = value
 
+    def __clear_symbols_tab(self):
+        self.__symbols_tab.clear()
+        self.__ids_tab.clear()
+
+    def __add_in_symbols_tab(self, symbol: str):
+        if symbol not in self.__ids_tab:
+            ind = len(self.__ids_tab)
+            self.__ids_tab[symbol] = ind
+            self.__symbols_tab.append(symbol)
+
     @property
     def rules(self)-> list:
         """
         Get rules of grammar.
         :return: list of grammar rules
         """
-        return [Rule(rule.key, *rule.value) for rule in self.__rules]
+        rules = []
+        for ind_rule in self.__rules:
+            rule = Rule()
+            rule.key = self.__symbols_tab[ind_rule.key]
+            rule.value = tuple(self.__symbols_tab[val] for val in ind_rule.value)
+            rules.append(rule)
+        return rules
 
     @rules.setter
     def rules(self, value: list)-> None:
@@ -1145,11 +1175,19 @@ class SParser(ISParser):
         """
         if value is None:
             raise ValueError("Rules must be not None!!!")
+        self.__clear_symbols_tab()
         self.__rules = []
         index = 0
         for rule in value:
-            ind_rule = IndRule(rule.key, *rule.value)
+            ind_rule = IndRule()
             ind_rule.index = index
+            self.__add_in_symbols_tab(rule.key)
+            ind_rule.key = self.__ids_tab[rule.key]
+            ind_rule_value = []
+            for val in rule.value:
+                self.__add_in_symbols_tab(val)
+                ind_rule_value.append(self.__ids_tab[val])
+            ind_rule.value = tuple(ind_rule_value)
             self.__rules.append(ind_rule)
 
     def parse_rules(self, specification: str)-> None:
@@ -1158,15 +1196,23 @@ class SParser(ISParser):
         :param specification: string of grammar rules
         :return: None
         """
+        self.__clear_symbols_tab()
         self.__rules = []
         index = 0
         for requir in specification.split(';\n'):
             key, values = requir.split('->', 1)
             key = key.strip()
+            self.__add_in_symbols_tab(key)
             values = values.split('|\n')
             for value in values:
-                rule = IndRule(key, *[val for val in value.strip().split(' ')])
+                rule = IndRule()
                 rule.index = index
+                rule.key = self.__ids_tab[key]
+                rule_value = []
+                for val in value.strip().split(' '):
+                    self.__add_in_symbols_tab(val)
+                    rule_value.append(self.__ids_tab[val])
+                rule.value = tuple(rule_value)
                 self.__rules.append(rule)
                 index += 1
 """

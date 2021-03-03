@@ -40,6 +40,7 @@ class ILexer(abc.ABC):
 
     def tokens(self):
         self.kind_ids.clear()
+        self.kinds.clear()
         self.lexemes.clear()
         for token in self._tokens():
             yield self.new_id_token(token)
