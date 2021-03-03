@@ -46,14 +46,16 @@ if __name__ == "__main__":
                           keywords=KEYWORDS,
                           multitokens=MULTITOKENS,
                           case_sensitive=CASE_SENSITIVE)
-    # t0 = time()
-    # try:
-    #     for token in lexer.tokens():
-    #         print(f"{lexer.num_line}:{lexer.num_column}: {token}")
-    # except UnexceptedLexError as err:
-    #     print(err)
-    # print("lexical analyze: ", time() - t0, " sec")
-    # print()
+    t0 = time()
+    try:
+        for token in lexer.tokens():
+            print(f"{lexer.num_line}:{lexer.num_column}: " +
+                  f"(kind='{lexer.kinds[token.kind]}'; " +
+                  f"value='{lexer.lexemes[token.kind][token.value]}'; " +
+                  f"id=[{token.kind},{token.value}])")
+    except UnexceptedLexError as err:
+        print(err)
+    print(time() - t0, " sec")
 
     stab_filename = STAB_FILENAME
     parser = SParser(lexer=lexer,

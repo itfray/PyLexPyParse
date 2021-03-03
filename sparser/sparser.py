@@ -1054,17 +1054,19 @@ class SParser(ISParser):
         :param value: symbol for check
         :return: result of check
         """
-        svalue = self.__symbols_tab[value]
         if value == self.__end_term:
             return True
         elif value == self.__empty_term:
             return True
         elif value in self.__tokens:
             return True
-        elif len(svalue) > 1 and\
-             svalue[0] == self.term_segreg[0] and\
-             svalue[-1] == self.term_segreg[-1]:
-            return True
+        else:
+            svalue = self.__symbols_tab.get(value, None)
+            if not svalue is None:
+                if len(svalue) > 1 and\
+                   svalue[0] == self.term_segreg[0] and\
+                   svalue[-1] == self.term_segreg[-1]:
+                    return True
         return False
 
     def create_sparse_tab(self)-> None:
