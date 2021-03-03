@@ -1116,42 +1116,44 @@ class SParser(ISParser):
         st_stack = [0]         # stack of states
         buf = []               # buffer tokens and nodes
         root = None            # root of parse tree
-        empty_term, end_term = range(-2, 0, -1)
+        empty_kind, end_kind = range(-2, 0)
         # create token generator
         # add end terminal how end token
         gen_token = merge_ranges(self.lexer.tokens(),
-                    range_objs(Token(end_term, end_term)))
+                      range_objs(Token(end_kind, end_kind)))
         curr_gen_token = gen_token
-        token = next(curr_gen_token)                 # generate first token
+        token = next(curr_gen_token)            # generate first token
         last_lex = ""                           # last looked lexeme
-        flag = token.value != end_term          # if there is still tokens
+        flag = token.kind != end_kind           # if there is still tokens
         msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
         added_empty = False
         while flag:
-            if token.kind == end_term:
-                iterm = self.__symbol_ids_tab[self.end_term]
-            elif token.kind == empty_term:
-                iterm = self.__symbol_ids_tab[self.empty_term]
+            if token.kind == end_kind:               # transform token to sid_term
+                sid_term = self.__end_term
+            elif token.kind == empty_kind:
+                sid_term = self.__empty_term
             else:
                 last_lex = self.lexer.lexemes[token.kind][token.value]
                 nline_lex = self.lexer.num_line
                 ncol_lex = self.lexer.num_column
-                try:
-                    iterm = self.__symbol_ids_tab.get(self.lexer.kinds[token.kind], None)
-                    # if iterm is None:
-                    if self.lexer.kinds[token.kind] in self.tokens:  # transform token to term
-                        iterm = self.__symbol_ids_tab[self.lexer.kinds[token.kind]]
-                    else:
-                        term = self.term_segreg[0] + \
-                               self.lexer.lexemes[token.kind][token.value] + \
-                               self.term_segreg[-1]
-                        iterm = self.__symbol_ids_tab[term]
-                except KeyError:
-                    msg = msg_err.format(last_lex, nline_lex, ncol_lex)
-                    raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
-                                           num_column=ncol_lex, message=msg)
-            # get cell of matrix of syntax analysis
-            cell = self.__sparse_tab.cell_hdr(st_stack[-1], iterm)
+                sid_term = self.__symbol_ids_tab.get(self.lexer.kinds[token.kind], None)
+                if sid_term is None:
+                    term = self.term_segreg[0] + \
+                           self.lexer.lexemes[token.kind][token.value] + \
+                           self.term_segreg[-1]
+                    try:
+                        sid_term = self.__symbol_ids_tab[term]
+                    except KeyError:
+                        msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                        raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
+                                               num_column=ncol_lex, message=msg)
+            try:
+                # get cell of matrix of syntax analysis
+                cell = self.__sparse_tab.cell_hdr(st_stack[-1], sid_term)
+            except KeyError:
+                msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
+                                       num_column=ncol_lex, message=msg)
             if cell.action == cell.SHF:
                 added_empty = False
                 st_stack.append(cell.value)    # go to a new state
@@ -1160,7 +1162,7 @@ class SParser(ISParser):
                     token = next(curr_gen_token)        # generate new token
                 except StopIteration:
                     raise UncorrectSParseTabErr(f"Last looked cell in the " +
-                                                f"SParseTable [{st_stack[-2]}]['{self.__symbols_tab[iterm]}']")
+                          f"SParseTable [{st_stack[-2]}]['{self.__symbols_tab[sid_term]}']")
             elif cell.action == cell.RUL:
                 added_empty = False
                 rule = self.__rules[cell.value]  # roll up by rule
@@ -1172,7 +1174,7 @@ class SParser(ISParser):
                         child = buf.pop(ibuf)
                         st_stack.pop(-1)
                         if not child.value is None and\
-                           child.value.kind == empty_term:
+                           child.value.kind == empty_kind:
                             continue
                         childs.append(child)
                     if len(childs) > 1:
@@ -1204,7 +1206,7 @@ class SParser(ISParser):
                 else:
                     added_empty = True
                     curr_gen_token = merge_ranges(range_objs(token), gen_token)
-                    token = Token(empty_term, empty_term)
+                    token = Token(empty_kind, empty_kind)
         return root
 
     def write_stab_to_file(self, filename: str, buffering = -1)-> None:
