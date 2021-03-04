@@ -925,7 +925,7 @@ class SParser(ISParser):
                       for terminal segregation
         :return: None
         """
-        self.__term_segreg = tuple(value[i] for i in range(2))
+        self.__term_segreg = tuple(str(value[i]) for i in range(2))
 
     def clear_tokens(self):
         for sid_tok in self.__tokens:
@@ -1241,42 +1241,47 @@ class SParser(ISParser):
             raise EmptyRulesError("List of rules is empty!!!")
         with open(filename, 'wb', buffering) as file:
             data = self.FILE_KEYWORD_IN_START.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                          # write "SPARSER"
-            file.write(struct.pack('<Q', len(self.__symbol2sid_tab)))                # write count symbols
-            for symbol in self.__symbol2sid_tab:                                     # write table of symbols
+            file.write(struct.pack(f'<{len(data)}s', data))              # write "SPARSER"
+            file.write(struct.pack('<Q', len(self.__symbol2sid_tab)))    # write count symbols
+            for symbol in self.__symbol2sid_tab:                         # write table of symbols
                 sid = self.__symbol2sid_tab[symbol]
                 bsymbol = symbol.encode()
                 file.write(f'<I{len(bsymbol)}sQ', len(bsymbol), bsymbol, sid)
 
             data = self.FILE_KEYWORD_BEFORE_RULES.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                          # write "RULES"
+            file.write(struct.pack(f'<{len(data)}s', data))                  # write "RULES"
             count_rules = len(self.__rules)
-            file.write(struct.pack(f'<i', count_rules))                              # write count rules
+            file.write(struct.pack(f'<I', count_rules))                      # write count rules
             for i in range(count_rules):
-                file.write(struct.pack(f'<Q', self.__rules[i].key))                  # write key
-                file.write(struct.pack('<I', len(self.__rules[i].value)))            # write count of values in rule
-                for val in self.__rules[i].value:                                    # write values
+                file.write(struct.pack(f'<Q', self.__rules[i].key))          # write key
+                file.write(struct.pack('<I', len(self.__rules[i].value)))    # write count of values in rule
+                for val in self.__rules[i].value:                            # write values
                     file.write(struct.pack(f'<Q', val))
 
-            file.write(struct.pack('<2Q', self.__end_term, self.__empty_term))       # write end and empty terms
-            file.write(struct.pack('<Q', len(self.__tokens)))                        # write count tokens
-            for sid_token in self.__tokens:                                          # write tokens
+            file.write(struct.pack('<Q', self.__end_term))        # write end term
+            file.write(struct.pack('<Q', self.__empty_term))      # write empty term
+            file.write(struct.pack('<Q', len(self.__tokens)))     # write count tokens
+            for sid_token in self.__tokens:                       # write tokens
                 file.write(struct.pack('<Q', sid_token))
 
+            for tseg in self.__term_segreg:                       # write term segreg
+                btseg = tseg.encode()
+                file.write(struct.pack(f'<I{len(btseg)}s', len(btseg), btseg))
+
             data = self.FILE_KEYWORD_BEFORE_HEADERS.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))        # write "HDRS"
+            file.write(struct.pack(f'<{len(data)}s', data))    # write "HDRS"
             hdrs = self.__sparse_tab.headers
-            file.write(struct.pack(f'<I', len(hdrs)))              # write count of hdrs
-            for hdr in hdrs:
+            file.write(struct.pack(f'<I', len(hdrs)))          # write count of hdrs
+            for hdr in hdrs:                                   # write headers
                 file.write(struct.pack(f'<Q', hdr))
 
             data = self.FILE_KEYWORD_BEFORE_TABLE.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                # write "TAB"
-            file.write(struct.pack(f'<i', self.__sparse_tab.rows))         # count of rows
-            for i in range(self.__sparse_tab.rows):
+            file.write(struct.pack(f'<{len(data)}s', data))            # write "TAB"
+            file.write(struct.pack(f'<I', self.__sparse_tab.rows))     # write count of rows
+            for i in range(self.__sparse_tab.rows):                    # write sparse table
                 for j in range(self.__sparse_tab.columns):
                     cell = self.__sparse_tab.cell_ind(i, j)
-                    file.write(struct.pack(f'<Bi', cell.action, cell.value))
+                    file.write(struct.pack(f'<BI', cell.action, cell.value))
 
     def read_stab_from_file(self, filename: str, buffering = -1)-> None:
         """
