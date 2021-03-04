@@ -11,8 +11,9 @@ RULES = """
         usess -> usess uses |
                  uses;
         uses -> 'uses' modules ';';
-        modules -> modules ',' ID |
-                   ID
+        modules -> modules ',' module |
+                   module;
+        module -> ID
         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
