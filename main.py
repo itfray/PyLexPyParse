@@ -26,10 +26,14 @@ lexer = ProgLangLexer(data_reader=data_reader,
 t0 = time()
 try:
     for token in lexer.tokens():
-        print(f"{lexer.num_line}:{lexer.num_column}: {token}")
+        print(f"{lexer.num_line}:{lexer.num_column}: " +
+              f"(kind='{lexer.kinds[token.kind]}'; " +
+              f"value='{lexer.lexemes[token.kind][token.value]}'; " +
+              f"id=[{token.kind},{token.value}])")
 except UnexceptedLexError as err:
     print(err)
 print(time() - t0, " sec")
+print()
 
 GOAL_NTERM = "E"
 END_TERM = '⊥'
