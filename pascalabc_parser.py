@@ -3,7 +3,7 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> section_progname section_uses;
+        program -> section_progname section_uses section_program;
         section_progname -> 'program' ID ';' |
                          ε;
         section_uses -> usess |
@@ -13,7 +13,12 @@ RULES = """
         uses -> 'uses' modules ';';
         modules -> modules ',' module |
                    module;
-        module -> ID
+        module -> ID;
+        section_program -> block '.';
+        block -> 'begin' stmts 'end';
+        stmts -> stmts stmt |
+                 ε;
+        stmt -> ';'
         """
 TOKENS = ('ID',)
 STAB_FILENAME = "pascalabc_stab.prstab"
@@ -37,6 +42,8 @@ if __name__ == "__main__":
            uses GraphABC, JopaSuka;
            uses Nahui;
            uses Blyad, Nah;
+           begin
+           end.
            """
     data_reader = StrReader(stmt)
     lexer = ProgLangLexer(data_reader=data_reader,
