@@ -38,7 +38,7 @@ if __name__ == "__main__":
 #    code_filename = "pascal_code.pas"
 #    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
     stmt = """
-           program train;
+           program train;;
            uses GraphABC, JopaSuka;
            uses Nahui;
            uses Blyad, Nah;
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     print(parser.rules)
     print()
     parser.create_sparse_tab()
+    # print_sparse_tab(parser, 17)
     t0 = time()
     node = parser.parse()
     print("parsing time: ", time() - t0, " sec")

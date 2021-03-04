@@ -670,23 +670,6 @@ class SParseTab:
             return 0
 
 
-def print_sparse_tab(tab: SParseTab, size_cell = 6):
-    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
-    print(f"|{' ':^{size_cell}}|", end="")
-    for hdr in tab.headers:
-        print(f"{str(hdr):^{size_cell}}|", end="")
-    print()
-    print('+' + ('-'*size_cell + '+') * (len(tab.headers) + 1))
-    irow = 0
-    for row in tab._SParseTab__content:
-        print(f"|{str(irow):^{size_cell}}|", end="")
-        for e in row:
-            print(f"{str(e):^{size_cell}}|", end="")
-        print()
-        irow += 1
-    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
-
-
 def create_sparse_tab(rules: list, lrstates: list,
                       term_func, goal_nterm, end_term)-> SParseTab:
     """
@@ -1360,6 +1343,24 @@ class SParser(ISParser):
         except struct.error as err:
             self.__sparse_tab = None
             raise ReadingSTabFileErr(read_err_msg + f" struct.error: {err}")
+
+
+def print_sparse_tab(parser: SParser, size_cell = 6):
+    tab = parser._SParser__sparse_tab
+    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
+    print(f"|{' ':^{size_cell}}|", end="")
+    for hdr in tab.headers:
+        print(f"{str(parser.symbol(hdr)):^{size_cell}}|", end="")
+    print()
+    print('+' + ('-'*size_cell + '+') * (len(tab.headers) + 1))
+    irow = 0
+    for row in tab._SParseTab__content:
+        print(f"|{str(irow):^{size_cell}}|", end="")
+        for e in row:
+            print(f"{str(e):^{size_cell}}|", end="")
+        print()
+        irow += 1
+    print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
 """
 ****************************************************************
         File format for rules and SParseTable:
