@@ -1264,8 +1264,8 @@ class SParser(ISParser):
             for sid_token in self.__tokens:                       # write tokens
                 file.write(struct.pack('<Q', sid_token))
 
-            for tseg in self.__term_segreg:                       # write term segreg
-                btseg = tseg.encode()
+            for i in range(2):                                    # write term segreg
+                btseg = self.__term_segreg[i].encode()
                 file.write(struct.pack(f'<I{len(btseg)}s', len(btseg), btseg))
 
             data = self.FILE_KEYWORD_BEFORE_HEADERS.encode()
@@ -1299,41 +1299,63 @@ class SParser(ISParser):
 
         try:
             with open(filename, 'rb', buffering) as file:
-                search_keyword(file, self.FILE_KEYWORD_IN_START, read_err_msg)      # read "SPARSER"
+                search_keyword(file, self.FILE_KEYWORD_IN_START, read_err_msg)   # read "SPARSER"
+                count_symbols = struct.unpack('<Q', file.read(8))[0]             # read count symbols
+                self.__symbol2sid_tab.clear()
+                self.__sid2symbol_tab.clear()
+                for i in range(count_symbols):                                   # read table of symbols
+                    len_symbol = struct.unpack('<I', file.read(4))[0]
+                    symbol, sid = struct.unpack(f'<{len_symbol}sQ', file.read(len_symbol + 8))[0]
+                    symbol = symbol.decode()
+                    self.__symbol2sid_tab[symbol] = sid
+                    self.__sid2symbol_tab[sid] = symbol
+
                 search_keyword(file, self.FILE_KEYWORD_BEFORE_RULES, read_err_msg)  # read "RULES"
-                count_rules = struct.unpack('<i', file.read(4))[0]                  # read count rules
+                count_rules = struct.unpack('<I', file.read(4))[0]                  # read count rules
                 self.__rules.clear()
-                for irule in range(count_rules):
+                for irule in range(count_rules):                                    # read rules
                     rule = IndRule()
                     rule.index = irule
-                    key_len = struct.unpack('<H', file.read(2))[0]                  # read key
-                    key = struct.unpack(f'<{key_len}s', file.read(key_len))[0].decode()
-                    rule.key = key
-                    count_vals = struct.unpack('<H', file.read(2))[0]               # read count of values in rule
+                    rule.key, count_vals = struct.unpack('<QI', file.read(12))[0]   # read rule key and count values
                     vals = []
-                    for ival in range(count_vals):                                  # read values
-                        val_len = struct.unpack('<H', file.read(2))[0]
-                        val = struct.unpack(f'<{val_len}s', file.read(val_len))[0].decode()
+                    for ival in range(count_vals):                                  # read rule values
+                        val = struct.unpack(f'<Q', file.read(8))[0]
                         vals.append(val)
                     rule.value = tuple(vals)
                     self.__rules.append(rule)
+
+                self.__end_term = struct.unpack('<Q', file.read(8))[0]              # read end term
+                self.__empty_term = struct.unpack('<Q', file.read(8))[0]            # read empty term
+                len_tokens = struct.unpack('<Q', file.read(8))[0]                   # read count of tokens
+                tokens = []
+                for i in range(len_tokens):                                         # read tokens
+                    sid_token = struct.unpack('<Q', file.read(8))[0]
+                    tokens.append(sid_token)
+                self.__tokens = tuple(tokens)
+
+                term_segreg = []
+                for i in range(2):                                                  # read term segreg
+                    len_tseg = struct.unpack('<I', file.read(4))
+                    tseg = struct.unpack(f'<{len_tseg}s', file.read(len_tseg))[0].decode()
+                    term_segreg.append(tseg)
+                self.__term_segreg = tuple(term_segreg)
+
                 search_keyword(file, self.FILE_KEYWORD_BEFORE_HEADERS, read_err_msg)  # read "HDRS"
                 count_hdrs = struct.unpack('<I', file.read(4))[0]                     # read count of headers
                 hdrs = []
-                for ihdr in range(count_hdrs):                                      # read hdrs
-                    hdr_len = struct.unpack('<H', file.read(2))[0]
-                    hdr = struct.unpack(f'<{hdr_len}s', file.read(hdr_len))[0].decode()
+                for i in range(count_hdrs):                                           # read hdrs
+                    hdr = struct.unpack('<Q', file.read(8))[0]
                     hdrs.append(hdr)
+
                 search_keyword(file, self.FILE_KEYWORD_BEFORE_TABLE, read_err_msg)  # read "TAB"
-                count_rows = struct.unpack(f'<i', file.read(4))[0]                  # read count of rows
+                count_rows = struct.unpack(f'<I', file.read(4))[0]                  # read count of rows
                 sparse_tab = SParseTab(headers=hdrs, rows=count_rows)
                 for i in range(sparse_tab.rows):                                    # read SParseTable
                     for j in range(sparse_tab.columns):
                         cell = sparse_tab.cell_ind(i, j)
-                        cell.action, cell.value = struct.unpack('<Bi', file.read(5))
+                        cell.action, cell.value = struct.unpack('<BI', file.read(5))
                 self.__sparse_tab = sparse_tab
         except struct.error as err:
-            self.__rules.clear()
             self.__sparse_tab = None
             raise ReadingSTabFileErr(read_err_msg + f" struct.error: {err}")
 """
