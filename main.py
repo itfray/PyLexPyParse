@@ -16,7 +16,6 @@ SPECIFICATION = [
     ('DELIM', r'[:;,()\.\[\]]'),
 ]
 
-# stmt = """ D * A * (B + C * K) - G"""
 stmt = "A + B * D"
 data_reader = StrReader(stmt)
 lexer = ProgLangLexer(data_reader=data_reader,
@@ -52,12 +51,11 @@ parser = SParser(lexer=lexer,
                  goal_nterm=GOAL_NTERM,
                  end_term=END_TERM,
                  parsing_of_rules=RULES)
-# if os.path.exists(stab_filename) and\
-#    os.path.isfile(stab_filename):
-#     parser.read_stab_from_file(stab_filename)
-# else:
-#     parser.create_sparse_tab()
-#     parser.write_stab_to_file(stab_filename)
-parser.create_sparse_tab()
+if os.path.exists(stab_filename) and\
+   os.path.isfile(stab_filename):
+    parser.read_stab_from_file(stab_filename)
+else:
+    parser.create_sparse_tab()
+    parser.write_stab_to_file(stab_filename)
 node = parser.parse()
 print(node)

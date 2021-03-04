@@ -1246,7 +1246,7 @@ class SParser(ISParser):
             for symbol in self.__symbol2sid_tab:                         # write table of symbols
                 sid = self.__symbol2sid_tab[symbol]
                 bsymbol = symbol.encode()
-                file.write(f'<I{len(bsymbol)}sQ', len(bsymbol), bsymbol, sid)
+                file.write(struct.pack(f'<I{len(bsymbol)}sQ', len(bsymbol), bsymbol, sid))
 
             data = self.FILE_KEYWORD_BEFORE_RULES.encode()
             file.write(struct.pack(f'<{len(data)}s', data))                  # write "RULES"
@@ -1305,7 +1305,8 @@ class SParser(ISParser):
                 self.__sid2symbol_tab.clear()
                 for i in range(count_symbols):                                   # read table of symbols
                     len_symbol = struct.unpack('<I', file.read(4))[0]
-                    symbol, sid = struct.unpack(f'<{len_symbol}sQ', file.read(len_symbol + 8))[0]
+                    symbol = struct.unpack(f'<{len_symbol}s', file.read(len_symbol))[0]
+                    sid = struct.unpack(f'<Q', file.read(8))[0]
                     symbol = symbol.decode()
                     self.__symbol2sid_tab[symbol] = sid
                     self.__sid2symbol_tab[sid] = symbol
@@ -1316,7 +1317,8 @@ class SParser(ISParser):
                 for irule in range(count_rules):                                    # read rules
                     rule = IndRule()
                     rule.index = irule
-                    rule.key, count_vals = struct.unpack('<QI', file.read(12))[0]   # read rule key and count values
+                    rule.key = struct.unpack('<Q', file.read(8))[0]                 # read rule key
+                    count_vals = struct.unpack('<I', file.read(4))[0]               # read count of values
                     vals = []
                     for ival in range(count_vals):                                  # read rule values
                         val = struct.unpack(f'<Q', file.read(8))[0]
@@ -1335,7 +1337,7 @@ class SParser(ISParser):
 
                 term_segreg = []
                 for i in range(2):                                                  # read term segreg
-                    len_tseg = struct.unpack('<I', file.read(4))
+                    len_tseg = struct.unpack('<I', file.read(4))[0]
                     tseg = struct.unpack(f'<{len_tseg}s', file.read(len_tseg))[0].decode()
                     term_segreg.append(tseg)
                 self.__term_segreg = tuple(term_segreg)
@@ -1428,7 +1430,6 @@ class SParser(ISParser):
 
 if __name__ == "__main__":
     pass
-    print(SParser.MAX_SID)
 #     print('start test1...')
 #     GOAL_NTERM = "S"
 #     END_TERM = '⊥'
