@@ -3,8 +3,8 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> section_name section_uses;
-        section_name -> 'program' ID ';' |
+        program -> section_progname section_uses;
+        section_progname -> 'program' ID ';' |
                          ε;
         section_uses -> usess |
                         ε;
