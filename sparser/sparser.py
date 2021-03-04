@@ -548,22 +548,22 @@ class CellSParseTab:
     """
     CellSParseTab is cell for SParse table
     """
-    vERR: int                                           # error value
+    vDEF: int                                           # default value
     EMP: int                                            # empty action
     ACC: int                                            # accept action
     RUL: int                                            # apply rule action
     SHF: int                                            # shift action
-    EMP, ACC, RUL, SHF = range(0, 4)                    # values of cell action
-    vERR = -1                                           # values of cell value
+    GOTO: int                                           # goto action
+    EMP, ACC, RUL, SHF, GOTO = range(0, 5)              # values of cell action
+    vDEF = 0                                            # values of cell value
     action: int                                         # cell action
     value: int                                          # cell value
     def __init__(self, **kwargs):
         self.action = kwargs.get("action", self.EMP)
-        self.value = kwargs.get("value", self.vERR)
+        self.value = kwargs.get("value", self.vDEF)
 
     def __str__(self):
         cond =  True
-        cond = self.value != self.vERR
         if self.action == self.ACC:
             ans = 'acc'
             cond = False
@@ -571,10 +571,11 @@ class CellSParseTab:
             ans = 'r'
         elif self.action == self.SHF:
             ans = 's'
-        elif self.action == self.EMP:
+        elif self.action == self.GOTO:
             ans = ''
         else:
             ans = ''
+            cond = False
         if cond:
             ans += str(self.value)
         return ans
@@ -736,6 +737,8 @@ def create_sparse_tab(rules: list, lrstates: list,
                     continue
                 if term_func(a):                   # if [A -> α●aβ, b]
                     cell.action = cell.SHF         # set SHIFT i
+                else:
+                    cell.action = cell.GOTO        # set GOTO i
                 cell.value = new_lrst.index        # else [A -> α●Bβ, b], set GOTO i
     return sparse_tab
 
@@ -1199,6 +1202,10 @@ class SParser(ISParser):
                     st_stack.pop(-1)
                 try:
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
+                    if cell.action != cell.GOTO:
+                        msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                        raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
+                                               num_column=ncol_lex, message=msg)
                 except KeyError:
                     raise UncorrectSParseTabErr(f"'{self.__sid2symbol_tab[rule.key]}' " +
                                                 "not found in the SParseTable!!!")
@@ -1234,25 +1241,35 @@ class SParser(ISParser):
             raise EmptyRulesError("List of rules is empty!!!")
         with open(filename, 'wb', buffering) as file:
             data = self.FILE_KEYWORD_IN_START.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                        # write "SPARSER"
+            file.write(struct.pack(f'<{len(data)}s', data))                          # write "SPARSER"
+            file.write(struct.pack('<Q', len(self.__symbol2sid_tab)))                # write count symbols
+            for symbol in self.__symbol2sid_tab:                                     # write table of symbols
+                sid = self.__symbol2sid_tab[symbol]
+                bsymbol = symbol.encode()
+                file.write(f'<I{len(bsymbol)}sQ', len(bsymbol), bsymbol, sid)
+
             data = self.FILE_KEYWORD_BEFORE_RULES.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                        # write "RULES"
+            file.write(struct.pack(f'<{len(data)}s', data))                          # write "RULES"
             count_rules = len(self.__rules)
-            file.write(struct.pack(f'<i', count_rules))                            # write count rules
+            file.write(struct.pack(f'<i', count_rules))                              # write count rules
             for i in range(count_rules):
-                bkey = self.__rules[i].key.encode()
-                file.write(struct.pack(f'<H{len(bkey)}s', len(bkey), bkey))          # write key
-                file.write(struct.pack('<H', len(self.__rules[i].value)))            # write count of values in rule
+                file.write(struct.pack(f'<Q', self.__rules[i].key))                  # write key
+                file.write(struct.pack('<I', len(self.__rules[i].value)))            # write count of values in rule
                 for val in self.__rules[i].value:                                    # write values
-                    bval = val.encode()
-                    file.write(struct.pack(f'<H{len(bval)}s', len(bval), bval))
+                    file.write(struct.pack(f'<Q', val))
+
+            file.write(struct.pack('<2Q', self.__end_term, self.__empty_term))       # write end and empty terms
+            file.write(struct.pack('<Q', len(self.__tokens)))                        # write count tokens
+            for sid_token in self.__tokens:                                          # write tokens
+                file.write(struct.pack('<Q', sid_token))
+
             data = self.FILE_KEYWORD_BEFORE_HEADERS.encode()
-            file.write(struct.pack(f'<{len(data)}s', data))                 # write "HDRS"
+            file.write(struct.pack(f'<{len(data)}s', data))        # write "HDRS"
             hdrs = self.__sparse_tab.headers
-            file.write(struct.pack(f'<I', len(hdrs)))                       # write count of hdrs
+            file.write(struct.pack(f'<I', len(hdrs)))              # write count of hdrs
             for hdr in hdrs:
-                bhdr = hdr.encode()
-                file.write(struct.pack(f'<H{len(bhdr)}s', len(bhdr), bhdr))
+                file.write(struct.pack(f'<Q', hdr))
+
             data = self.FILE_KEYWORD_BEFORE_TABLE.encode()
             file.write(struct.pack(f'<{len(data)}s', data))                # write "TAB"
             file.write(struct.pack(f'<i', self.__sparse_tab.rows))         # count of rows
