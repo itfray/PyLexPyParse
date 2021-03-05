@@ -30,8 +30,8 @@ class Rule:
     """
     Rule is rule of grammar of language
     """
-    key = None                             # key of rule
-    __value: tuple                       # value of rule
+    key: object                              # key of rule
+    __value: tuple                           # value of rule
     def __init__(self, key = None, *value):
         self.key = key
         self.value = value
@@ -220,7 +220,6 @@ class LRState:
     __lrpoints: list                        # LR-points of LR-state
     __goto: dict                            # transitions in other states
     __rgoto: dict                           # reverse transitions in other states
-
     def __init__(self, **kwargs):
         self.lrpoints = kwargs.get('lrpoints', [])
         self.goto = kwargs.get('goto', {})

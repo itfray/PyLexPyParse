@@ -3,13 +3,14 @@ from lexer import ILexer
 
 
 class Node:
-    kind = None
-    value = None                        # node value
-    parent = None                       # parent node
-    __childs: list                      # child nodes
+    kind: object                         # node kind
+    value: object                        # node value
+    parent: object                       # parent node
+    __childs: list                       # child nodes
     def __init__(self, **kwargs):
         self.parent = kwargs.get('parent', None)
         self.value = kwargs.get('value', None)
+        self.kind = kwargs.get('kind', None)
         childs = kwargs.get('childs', None)
         self.__childs = [] if childs is None else [child for child in childs]
 

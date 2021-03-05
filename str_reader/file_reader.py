@@ -7,10 +7,11 @@ class FileStrReader(IStrReader):
     """
     DEFAULT_BUFFERING = -1                           # size buffer for reading from file
     DEFAULT_ENCODING = 'utf-8'                       # what encoding for reading from file
-    __file = None                                    # handler of file
+    __file: object                                   # handler of file
 
     def __init__(self, filename="", **kwargs):
         super().__init__()
+        self.__file = None
         if len(filename) > 0:
             self.open(filename, **kwargs)
 

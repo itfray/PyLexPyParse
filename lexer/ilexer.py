@@ -6,9 +6,9 @@ class Token:
     """
     Token is class for tokenization of data
     """
-    kind = None
-    value = None
-    def __init__(self, kind, value):
+    kind: object        # token kind
+    value: object       # token value
+    def __init__(self, kind = None, value = None):
         self.kind = kind
         self.value = value
 

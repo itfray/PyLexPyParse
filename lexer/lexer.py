@@ -10,7 +10,7 @@ class Lexer(ILexer):
     DEFAULT_SIZE_READ_DATA = 256         # default size one portion of read data
     __data_reader: IStrReader            # reader of string data
     __specification: tuple               # lexical specification. Example: (('KIND','[Regex]'),...)
-    __token_regex: None                  # compiled specification in regex
+    __token_regex: object                # compiled specification in regex
     __size_read_data: int                # size one portion of read data
     __num_line: int                      # current processed line
     __num_column: int                    # current processed column
@@ -19,6 +19,7 @@ class Lexer(ILexer):
     __lexemes: list                      # table of lexemes
 
     def __init__(self, **kwargs):
+        self.__token_regex = None
         self.__kind_ids = {}
         self.__kinds = []
         self.__lexemes = []
