@@ -1144,9 +1144,8 @@ class SParser(ISParser):
                 # get cell of matrix of syntax analysis
                 cell = self.__sparse_tab.cell_hdr(st_stack[-1], sid_term)
             except KeyError:
-                msg = msg_err.format(last_lex, nline_lex, ncol_lex)
-                raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
-                                       num_column=ncol_lex, message=msg)
+                raise UncorrectSParseTabErr(f"'{self.__sid2symbol_tab[sid_term]}' " +
+                                            "not found in the SParseTable!!!")
             if cell.action == cell.SHF:
                 added_empty = False
                 st_stack.append(cell.value)    # go to a new state
