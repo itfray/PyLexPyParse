@@ -12,27 +12,47 @@ class Lexer(ILexer):
     __specification: tuple               # lexical specification. Example: (('KIND','[Regex]'),...)
     __token_regex: None                  # compiled specification in regex
     __size_read_data: int                # size one portion of read data
-    __num_line = 1                       # current processed line
-    __num_column = 1                     # current processed column
+    __num_line: int                      # current processed line
+    __num_column: int                    # current processed column
+    __kind_ids: dict                     # dictionary of kinds
+    __kinds: list                        # list of kinds
+    __lexemes: list                      # table of lexemes
 
     def __init__(self, **kwargs):
-        self.data_reader = kwargs.get("data_reader", None)
-        self.size_read_data = kwargs.get("size_read_data", self.DEFAULT_SIZE_READ_DATA)
-        self.specification = kwargs.get("specification", ())
         self.__kind_ids = {}
         self.__kinds = []
         self.__lexemes = []
+        self.__num_line = 1
+        self.__num_column = 1
+        self.data_reader = kwargs.get("data_reader", None)
+        self.size_read_data = kwargs.get("size_read_data", self.DEFAULT_SIZE_READ_DATA)
+        self.specification = kwargs.get("specification", ())
 
     @property
     def kind_ids(self) -> dict:
+        """
+        Get dict of kinds where
+        index is kind and value
+        is identifier of kind.
+        :return: dict of kinds
+        """
         return self.__kind_ids
 
     @property
     def kinds(self) -> list:
+        """
+        Get list of kinds where
+        index is identifier of kind.
+        :return: list of kinds
+        """
         return self.__kinds
 
     @property
     def lexemes(self) -> list:
+        """
+        Get table of lexemes.
+        :return: table of lexemes.
+        """
         return self.__lexemes
 
     def _tokens(self):

@@ -26,38 +26,68 @@ class ILexer(abc.ABC):
     @property
     @abc.abstractmethod
     def kind_ids(self)-> dict:
-        pass
+        """
+        Get dict of kinds where
+        index is kind and value
+        is identifier of kind.
+        example: {kind0: kind_id0, ..., kindN: kind_idN}
+        :return: dict of kinds
+        """
 
     @property
     @abc.abstractmethod
     def kinds(self)-> list:
-        pass
+        """
+        Get list of kinds where
+        index is identifier of kind.
+        example: [kind0, ..., kindN]
+        :return: list of kinds
+        """
 
     @property
     @abc.abstractmethod
     def lexemes(self)-> list:
-        pass
+        """
+        Get table of lexemes.
+        :return: list of lexemes, grouped by kinds.
+                 row index is kind identifier,
+                 column index is index of lexeme
+                 among lexemes of this kind.
+        """
 
     def tokens(self):
-        self.kind_ids.clear()
+        """
+        Peforms search lexemes in string data
+        :return: tokenized parts of data i.e. tokens,
+                 where kind is index in table of kinds,
+                 and kind and value is indexes in table of lexemes
+        """
+        self.kind_ids.clear()                       # clear tables of kinds
         self.kinds.clear()
-        self.lexemes.clear()
+        self.lexemes.clear()                        # clear table of lexemes
         for token in self._tokens():
-            yield self.new_id_token(token)
+            yield self.new_id_token(token)          # return indexed token
 
     def new_id_token(self, token: Token)-> Token:
+        """
+        Create new indexed token.
+        Append new kind to dictionary of kinds and
+        append new lexeme to table of lexemes.
+        :param token: string token, Token(kind, value)
+        :return: indexed token, Token(kind_id, value_id)
+        """
         if token.kind not in self.kind_ids:
-            kind_id = len(self.kind_ids)
+            kind_id = len(self.kind_ids)             # create new kind id
             self.kind_ids[token.kind] = kind_id
-            self.kinds.append(token.kind)
-            self.lexemes.append([token.value,])
+            self.kinds.append(token.kind)            # append new kind
+            self.lexemes.append([token.value,])      # append new lexeme
             value_id = 0
         else:
-            kind_id = self.kind_ids[token.kind]
+            kind_id = self.kind_ids[token.kind]      # return already existing kind id
             try:
                 value_id = self.lexemes[kind_id].index(token.value)
             except ValueError:
-                self.lexemes[kind_id].append(token.value)
+                self.lexemes[kind_id].append(token.value)    # append new lexeme
                 value_id = len(self.lexemes[kind_id]) - 1
         new_token = Token(kind_id, value_id)
         return new_token
