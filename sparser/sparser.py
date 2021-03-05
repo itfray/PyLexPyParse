@@ -1118,7 +1118,6 @@ class SParser(ISParser):
         token = next(curr_gen_token)            # generate first token
         last_lex = ""                           # last looked lexeme
         flag = token.kind != end_kind           # if there is still tokens
-        msg_err = "Unexcepted lexeme '{0}' in line {1} in column {2}!!!"
         added_empty = False
         while flag:
             if token.kind == end_kind:               # transform token to sid_term
@@ -1137,7 +1136,7 @@ class SParser(ISParser):
                     try:
                         sid_term = self.__symbol2sid_tab[term]
                     except KeyError:
-                        msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                        msg = f"Unexcepted '{last_lex}' in line {nline_lex} in column {ncol_lex}!!!"
                         raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
                                                num_column=ncol_lex, message=msg)
             try:
@@ -1184,9 +1183,8 @@ class SParser(ISParser):
                 try:
                     cell = self.__sparse_tab.cell_hdr(st_stack[-1], rule.key)
                     if cell.action != cell.GOTO:
-                        msg = msg_err.format(last_lex, nline_lex, ncol_lex)
-                        raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
-                                               num_column=ncol_lex, message=msg)
+                        raise UncorrectSParseTabErr(f"Action of cell [{st_stack[-2]}]" +
+                                                    f"['{self.__sid2symbol_tab[sid_term]}'] must be GOTO!!!")
                 except KeyError:
                     raise UncorrectSParseTabErr(f"'{self.__sid2symbol_tab[rule.key]}' " +
                                                 "not found in the SParseTable!!!")
@@ -1197,7 +1195,10 @@ class SParser(ISParser):
                 return root
             else:
                 if added_empty:
-                    msg = msg_err.format(last_lex, nline_lex, ncol_lex)
+                    msg = f"Unexcepted '{last_lex}' in line {nline_lex} in column {ncol_lex}"
+                    icol = self.__find_exepted_lexeme(st_stack[-1])
+                    if icol > 0:
+                        msg += f", but expected {self.__sid2symbol_tab[self.__sparse_tab.headers[icol]]}!!!"
                     raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
                                            num_column=ncol_lex, message=msg)
                 else:
@@ -1205,6 +1206,24 @@ class SParser(ISParser):
                     curr_gen_token = merge_ranges(range_objs(token), gen_token)
                     token = Token(empty_kind, empty_kind)
         return root
+
+    def __find_exepted_lexeme(self, irow: int)-> int:
+        """
+        Find exepted lexeme in SParseTable.
+        :param irow: row number
+        :return: column number, if not found -1
+        """
+        count_cols = 0
+        found_icol = 0
+        for icol in range(self.__sparse_tab.columns):               # search of exepted lexeme
+            cell = self.__sparse_tab.cell_ind(irow, icol)
+            # search all cells with SHF or RUL action in current state
+            if cell.action == cell.SHF or cell.action == cell.RUL:
+                count_cols += 1
+                found_icol = icol
+        if count_cols == 1:                                          # excepted lexeme is found
+            return found_icol
+        return -1
 
     def write_stab_to_file(self, filename: str, buffering = -1)-> None:
         """
