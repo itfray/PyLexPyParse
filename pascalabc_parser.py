@@ -3,17 +3,18 @@ GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
 RULES = """
-        program -> section_progname section_uses section_program;
-        section_progname -> 'program' ID ';' |
-                         ε;
-        section_uses -> usess |
+        program -> section_prgrname section_uses section_program;
+        
+        section_prgrname -> 'program' ID ';' |
+                             ε;
+                             
+        section_uses -> section_uses uses |
                         ε;
-        usess -> usess uses |
-                 uses;
         uses -> 'uses' modules ';';
         modules -> modules ',' module |
                    module;
         module -> ID;
+        
         section_program -> block '.';
         block -> 'begin' stmts 'end';
         stmts -> stmts stmt |
