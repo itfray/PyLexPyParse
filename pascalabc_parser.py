@@ -6,20 +6,18 @@ RULES = """
         program -> section_prgrname section_uses sub_sections section_program;
 
 
-        sub_sections -> sub_sections sub_section| 
+        sub_sections -> sub_sections sub_section |
                         ε;
-        
-
         sub_section -> section_var |
                        section_const |
                        section_type |
                        section_label;
-        
+
 
         section_prgrname -> 'program' ID ';' |
                             'unit' ID ';' |
                              ε;
-                
+
 
         section_uses -> section_uses uses |
                         ε;
@@ -29,15 +27,15 @@ RULES = """
 
 
         section_var -> 'var' decls;
-        decls -> decls decl |
-                 decl;
+        decls -> decls decl ';' |
+                 decl ';' ;
         list_exprs -> list_exprs ',' expr |
                       expr;
-        decl -> list_ids ':' ID ';' |
-                ID ':' ID ':=' expr ';' |
-                ID ':' ID '=' expr ';' |
-                ID ':=' expr ';' |
-                '(' list_ids ')' ':=' '(' list_exprs ')' ';';
+        decl -> list_ids ':' ID |
+                ID ':' ID ':=' expr |
+                ID ':' ID '=' expr |
+                ID ':=' expr |
+                '(' list_ids ')' ':=' '(' list_exprs ')';
 
 
         section_const -> 'const';
@@ -47,39 +45,67 @@ RULES = """
 
 
         section_label -> 'label';
-        
+
 
         section_program -> block '.';
         block -> 'begin' stmts 'end';
         stmts -> stmts stmt |
                  ε;
         stmt -> ';';
+
+
         expr -> ID |
-                NUM
+                NUM |
+                STR
         """
 RULES = """
-        program -> section_prgrname section_uses section_program;
-        
+        program -> section_prgrname section_uses sub_sections section_program;
+
+
+        sub_sections -> sub_sections sub_section |
+                        ε;
+        sub_section -> section_var |
+                       section_const |
+                       section_type |
+                       section_label;
+
 
         section_prgrname -> 'program' ID ';' |
                             'unit' ID ';' |
                              ε;
-                
+
 
         section_uses -> section_uses uses |
                         ε;
         uses -> 'uses' list_ids ';';
         list_ids -> list_ids ',' ID |
                     ID;
-        
-        
+
+
+        section_var -> 'var';
+
+
+        section_const -> 'const';
+
+
+        section_type -> 'type';
+
+
+        section_label -> 'label';
+
+
         section_program -> block '.';
         block -> 'begin' stmts 'end';
         stmts -> stmts stmt |
                  ε;
-        stmt -> ';'
+        stmt -> ';';
+
+
+        expr -> ID |
+                NUM |
+                STR
         """
-TOKENS = ('ID', 'NUM',)
+TOKENS = ('ID', 'NUM', 'STR')
 STAB_FILENAME = "pascalabc_stab.prstab"
 
 
@@ -122,7 +148,8 @@ if __name__ == "__main__":
                      end_term=END_TERM,
                      empty_term=EMPTY_TERM,
                      parsing_of_rules=RULES)
-    print(parser.rules)
+    for rule in parser.rules:
+        print(rule)
     print()
     parser.create_sparse_tab()
     t0 = time()

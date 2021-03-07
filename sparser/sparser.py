@@ -996,7 +996,7 @@ class SParser(ISParser):
             key, values = requir.split('->', 1)
             key = key.strip()
             self.__add_symbol_to_tab(key)
-            values = values.split('|\n')
+            values = values.strip().split('|\n')
             for value in values:
                 rule = IndRule()
                 rule.index = index
@@ -1195,10 +1195,7 @@ class SParser(ISParser):
                 return root
             else:
                 if added_empty:
-                    msg = f"Unexcepted '{last_lex}' in line {nline_lex} in column {ncol_lex}"
-                    icol = self.__find_exepted_lexeme(st_stack[-1])
-                    if icol > 0:
-                        msg += f", but expected {self.__sid2symbol_tab[self.__sparse_tab.headers[icol]]}!!!"
+                    msg = f"Unexcepted '{last_lex}' in line {nline_lex} in column {ncol_lex}!!!"
                     raise ParseSyntaxError(lexeme=last_lex, num_line=nline_lex,
                                            num_column=ncol_lex, message=msg)
                 else:
@@ -1206,24 +1203,6 @@ class SParser(ISParser):
                     curr_gen_token = merge_ranges(range_objs(token), gen_token)
                     token = Token(empty_kind, empty_kind)
         return root
-
-    def __find_exepted_lexeme(self, irow: int)-> int:
-        """
-        Find exepted lexeme in SParseTable.
-        :param irow: row number
-        :return: column number, if not found -1
-        """
-        count_cols = 0
-        found_icol = 0
-        for icol in range(self.__sparse_tab.columns):               # search of exepted lexeme
-            cell = self.__sparse_tab.cell_ind(irow, icol)
-            # search all cells with SHF or RUL action in current state
-            if cell.action == cell.SHF or cell.action == cell.RUL:
-                count_cols += 1
-                found_icol = icol
-        if count_cols == 1:                                          # excepted lexeme is found
-            return found_icol
-        return -1
 
     def write_stab_to_file(self, filename: str, buffering = -1)-> None:
         """
