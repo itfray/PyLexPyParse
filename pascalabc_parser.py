@@ -59,7 +59,7 @@ RULES = """
                 STR
         """
 RULES = """
-        program -> section_prgrname section_uses sub_sections section_program;
+        program -> section_prgrname section_uses sub_sections block '.';
 
 
         sub_sections -> sub_sections sub_section |
@@ -94,13 +94,12 @@ RULES = """
         section_label -> 'label';
 
 
-        section_program -> block '.';
         block -> 'begin' stmts 'end';
         stmts -> stmts stmt |
                  ε;
-        stmt -> ';';
-
-
+        stmt -> expr ';' |
+                ';' |
+                block;
         expr -> ID |
                 NUM |
                 STR

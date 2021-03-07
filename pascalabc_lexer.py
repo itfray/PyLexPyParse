@@ -38,7 +38,7 @@ MULTITOKENS = {
 SPECIFICATION = [
     (SKIP_KIND, r'[\s\t]+'),
     (ID_KIND, r'[_A-Za-zА-Яа-я&][_A-Za-zА-Яа-я\d]*'),
-    ('NUM', r'(\+|-)?\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
+    ('NUM', r'\d+(\.\d+)?((e|E)(\+|-)?\d+)?'),
     ('HEX_NUM', r'\$[A-Fa-f0-9]+'),
     ('STR', r"'[^']*'"),
     ('RANGE', r'\.\.'),
@@ -62,7 +62,6 @@ ID: r'''
     ''',
 
 NUM: r'''
-      (\+|-)?                # sign of number
       \d+                    # integer part
       (\.\d+)?               # float part
       ((e|E)(\+|-)?\d+)?     # decimal order
