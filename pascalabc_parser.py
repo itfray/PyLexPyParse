@@ -100,9 +100,45 @@ RULES = """
         stmt -> expr ';' |
                 ';' |
                 block;
-        expr -> ID |
-                NUM |
-                STR
+
+        expr -> rel;
+        rel -> rel '<' add |
+               rel '<=' add |
+               rel '>' add |
+               rel '>=' add |
+               rel '<>' add |
+               rel '=' add |
+               add;
+        add -> add '+' mul |
+               add '-' mul |
+               add 'or' mul |
+               add 'xor' mul |
+               mul;
+        mul -> mul '*' unar |
+               mul '/' unar |
+               mul 'div' unar |
+               mul 'mod' unar |
+               mul 'and' unar |
+               mul 'shl' unar |
+               mul 'shr' unar |
+               mul 'as' unar |
+               mul 'is' unar |
+               unar;
+        unar -> '@' iter |
+                'not' iter |
+                iter '^' |
+                '+' iter |
+                '-' iter |
+                'new' iter |
+                iter;
+        iter -> factor '[' NUM ':' NUM ':' NUM ']' |
+                factor '[' NUM ':' NUM ']' |
+                factor '?' '[' NUM ':' NUM ':' NUM ']' |
+                factor '?' '[' NUM ':' NUM ']' |
+                factor;
+        factor -> NUM |
+                  ID |
+                  STR
         """
 TOKENS = ('ID', 'NUM', 'STR')
 STAB_FILENAME = "pascalabc_stab.prstab"
@@ -110,6 +146,7 @@ STAB_FILENAME = "pascalabc_stab.prstab"
 
 if __name__ == "__main__":
     from time import time
+    import os
     from str_reader.file_reader import FileStrReader
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from sparser.sparser import SParser
@@ -150,7 +187,17 @@ if __name__ == "__main__":
     for rule in parser.rules:
         print(rule)
     print()
-    parser.create_sparse_tab()
+    t0 = time()
+    if os.path.exists(stab_filename) and \
+            os.path.isfile(stab_filename):
+        parser.read_stab_from_file(stab_filename)
+        print("sparse table readed")
+    else:
+        parser.create_sparse_tab()
+        parser.write_stab_to_file(stab_filename)
+        print("sparse table created")
+    print("time for sparse table: ", time() - t0, " sec")
+    print()
     t0 = time()
     node = parser.parse()
     print("parsing time: ", time() - t0, " sec")
