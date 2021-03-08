@@ -426,37 +426,41 @@ def create_LR1States(rules: list, term_func, start_lrp: LR1Point)-> list:
     lrpts = [start_lrp]
     lrst = LRState(index=index)                            # LR-state I0
     lrst.lrpoints = closure_LR1(rules, term_func, lrpts)   # calculate CLOSURE(I0)
-    created_lrsts = []     # all created LR-states and LR-points with that they were created
+    created_lrsts = {}                    # all created LR-states and LR-points with that they were created
     queue = []                            # queue of LR-states processing
-    queue.append((lrpts, lrst))           # add I0 for processing
-    created_lrsts.append((lrpts, lrst))   # add I0 how created
+    ans_lrsts = []
+    ans_lrsts.append(lrst)
+    lrst_key = tuple(lrp.to_tuple() for lrp in lrpts)
+    created_lrsts[lrst_key] = lrst        # add I0 how created
+    queue.append(lrst)                    # add I0 for processing
     while len(queue) > 0:
-        _, curr_lrst = queue.pop(0)
+        curr_lrst = queue.pop(0)
+        goto_symbols = set()
         for lrpoint in curr_lrst.lrpoints:
             rule = lrpoint.rule
             iptr = lrpoint.iptr
             if iptr < 0 or iptr > len(rule.value) - 1:      # if after ● there is a symbol
                 continue
             B = rule.value[iptr]
+            goto_symbols.add(B)
+        for B in goto_symbols:
             new_lrps = goto_LR1Point(curr_lrst.lrpoints, B)  # get LR1-points for GOTO-transition
             if len(new_lrps) == 0:
                 continue
-            new_lrst = None
-            for lrps, lrst in created_lrsts:      # find LR-state by GOTO LR-points
-                if lrps == new_lrps:              # if LR-state is already created
-                    new_lrst = lrst
-                    break
-            if new_lrst is None:                  # create new LR-state
+            lrst_key = tuple(lrp.to_tuple() for lrp in new_lrps)
+            new_lrst = created_lrsts.get(lrst_key, None)
+            if new_lrst is None:                     # create new LR-state
                 index += 1
                 new_lrst = LRState(index=index)
                 new_lrst.lrpoints = closure_LR1(rules, term_func, new_lrps)
-                created_lrsts.append((new_lrps, new_lrst))  # add Ii how created
-                queue.append((new_lrps, new_lrst))          # add Ii for processing
+                queue.append(new_lrst)                # add Ii for processing
+                created_lrsts[lrst_key] = new_lrst    # add Ii how created
+                ans_lrsts.append(new_lrst)
             curr_lrst.goto[B] = new_lrst              # set transition
             refs = new_lrst.rgoto.get(B, [])          # set reverse transition
             refs.append(curr_lrst)
             new_lrst.rgoto[B] = refs
-    return [lrst for _, lrst in created_lrsts]        # return list of LR-states
+    return ans_lrsts
 
 def can_merge_LR1_states(lrst1: LRState, lrst2: LRState)-> bool:
     """
@@ -1370,92 +1374,29 @@ def print_sparse_tab(parser: SParser, size_cell = 6):
         print()
         irow += 1
     print('+' + ('-' * size_cell + '+') * (len(tab.headers) + 1))
-"""
-****************************************************************
-        File format for rules and SParseTable:
-
-        +------------+-------------+-------------+
-        |  "SPARSER" |   "RULES"   | count rules |
-        |  (7 bytes) |  (5 bytes)  |  (8 bytes)  |
-        +------------+-------------+-------------+
-        |  len key1  |     key1    | count vals1 |
-        | (4 bytes)  |             |  (4 bytes)  |
-        +------------+---------------------------+
-        |  len val11 |           val11           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |  len val12 |           val12           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |                                        |
-        .                                        .
-        |                                        |
-        +------------+-------------+-------------+
-        |  len keyN  |     keyN    | count valsN |
-        | (4 bytes)  |             |  (4 bytes)  |
-        +------------+---------------------------+
-        |  len valN1 |           valN1           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |  len valN2 |           valN2           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |                                        |
-        .                                        .
-        |                                        |
-        +---------------------------+------------+
-        |           "HDRS"          | count hdrs |
-        |         (4 bytes)         |  (8 bytes) |
-        +------------+---------------------------+
-        |  len hdr1  |            hdr1           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |                                        |
-        .                                        .
-        |                                        |
-        +------------+---------------------------+
-        |  len hdrN  |            hdrN           |
-        |  (4 bytes) |                           |
-        +------------+---------------------------+
-        |    "TAB"   |        count rows         |
-        |  (3 bytes) |         (8 bytes)         |
-        +------------+-------+-------------------+
-        |    cell action11   |   cell value11    |
-        |       (2 bytes)    |     (8 bytes)     |
-        +--------------------+-------------------+
-        |    cell action21   |   cell value21    |
-        |       (2 bytes)    |     (8 bytes)     |
-        +--------------------+-------------------+
-        |                                        |
-        .                                        .
-        |                                        |
-        +--------------------+-------------------+
-        |    cell actionMN   |   cell valueMN    |
-        |       (2 bytes)    |     (8 bytes)     |
-        +--------------------+-------------------+
-        
-****************************************************************
-"""
 
 
-if __name__ == "__main__":
-    pass
+# if __name__ == "__main__":
 #     print('start test1...')
 #     GOAL_NTERM = "S"
 #     END_TERM = '⊥'
+#     EMPTY_TERM = 'ε'
 #     RULES = """
 #              S -> C C;
 #              C -> c C |
 #                   d
 #             """
 #     TOKENS = ('c', 'd')
-#     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-#     parser.parse_rules(RULES)
+#     parser = SParser(tokens=TOKENS,
+#                      goal_nterm=GOAL_NTERM,
+#                      end_term=END_TERM,
+#                      empty_term=EMPTY_TERM,
+#                      parsing_of_rules=RULES)
 #     parser.create_sparse_tab()
 #     tab = parser._SParser__sparse_tab
 #     print(f"count rows: {tab.rows}")
 #     print(f"count cols: {tab.columns}")
-#     print_sparse_tab(tab)
+#     print_sparse_tab(parser)
 #     print("end test1...")
 #
 #     print()
@@ -1463,6 +1404,7 @@ if __name__ == "__main__":
 #     print("start test2...")
 #     GOAL_NTERM = "E"
 #     END_TERM = '⊥'
+#     EMPTY_TERM = 'ε'
 #     RULES = """
 #              E -> E '+' T |
 #                   E '-' T |
@@ -1474,13 +1416,16 @@ if __name__ == "__main__":
 #                   ID
 #             """
 #     TOKENS = ('ID',)
-#     parser = SParser(tokens=TOKENS, goal_nterm=GOAL_NTERM, end_term=END_TERM)
-#     parser.parse_rules(RULES)
+#     parser = SParser(tokens=TOKENS,
+#                      goal_nterm=GOAL_NTERM,
+#                      end_term=END_TERM,
+#                      empty_term=EMPTY_TERM,
+#                      parsing_of_rules=RULES)
 #     parser.create_sparse_tab()
 #     tab = parser._SParser__sparse_tab
 #     print(f"count rows: {tab.rows}")
 #     print(f"count cols: {tab.columns}")
-#     print_sparse_tab(tab)
+#     print_sparse_tab(parser)
 #     print('end test2...')
 #
 #     """
@@ -1490,38 +1435,38 @@ if __name__ == "__main__":
 #     count rows: 7
 #     count cols: 5
 #     +------+------+------+------+------+------+
-#     |      |  c   |  d   |  C   |  S   |  ⊥   |
+#     |      |  d   |  ⊥   |  S   |  C   |  c   |
 #     +------+------+------+------+------+------+
-#     |  0   |  s3  |  s4  |  2   |  1   |      |
-#     |  1   |      |      |      |      | acc  |
-#     |  2   |  s3  |  s4  |  5   |      |      |
-#     |  3   |  s3  |  s4  |  6   |      |      |
-#     |  4   |  r3  |  r3  |      |      |  r3  |
-#     |  5   |      |      |      |      |  r1  |
-#     |  6   |  r2  |  r2  |      |      |  r2  |
+#     |  0   |  s4  |      |  1   |  2   |  s3  |
+#     |  1   |      | acc  |      |      |      |
+#     |  2   |  s4  |      |      |  5   |  s3  |
+#     |  3   |  s4  |      |      |  6   |  s3  |
+#     |  4   |  r2  |  r2  |      |      |  r2  |
+#     |  5   |      |  r0  |      |      |      |
+#     |  6   |  r1  |  r1  |      |      |  r1  |
 #     +------+------+------+------+------+------+
 #
 #     TEST2:
 #     count rows: 16
 #     count cols: 11
 #     +------+------+------+------+------+------+------+------+------+------+------+------+
-#     |      |  T   |  ID  | '+'  | '-'  | '/'  | '('  | ')'  |  F   | '*'  |  E   |  ⊥   |
+#     |      |  E   |  F   | '-'  | '*'  |  ID  | '+'  |  ⊥   | ')'  |  T   | '/'  | '('  |
 #     +------+------+------+------+------+------+------+------+------+------+------+------+
-#     |  0   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  1   |      |
-#     |  1   |      |      |  s6  |  s7  |      |      |      |      |      |      | acc  |
-#     |  2   |      |      |      |      |  s9  |      |  r3  |      |  s8  |      |  r3  |
-#     |  3   |      |      |      |      |      |      |  r6  |      |      |      |  r6  |
-#     |  4   |  2   |  s5  |      |      |      |  s4  |      |  3   |      |  10  |      |
-#     |  5   |      |      |      |      |      |      |  r8  |      |      |      |  r8  |
-#     |  6   |  11  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
-#     |  7   |  12  |  s5  |      |      |      |  s4  |      |  3   |      |      |      |
-#     |  8   |      |  s5  |      |      |      |  s4  |      |  13  |      |      |      |
-#     |  9   |      |  s5  |      |      |      |  s4  |      |  14  |      |      |      |
-#     |  10  |      |      |  s6  |  s7  |      |      | s15  |      |      |      |      |
-#     |  11  |      |      |      |      |  s9  |      |  r1  |      |  s8  |      |  r1  |
-#     |  12  |      |      |      |      |  s9  |      |  r2  |      |  s8  |      |  r2  |
-#     |  13  |      |      |      |      |      |      |  r4  |      |      |      |  r4  |
-#     |  14  |      |      |      |      |      |      |  r5  |      |      |      |  r5  |
-#     |  15  |      |      |      |      |      |      |  r7  |      |      |      |  r7  |
+#     |  0   |  1   |  3   |      |      |  s5  |      |      |      |  2   |      |  s4  |
+#     |  1   |      |      |  s7  |      |      |  s6  | acc  |      |      |      |      |
+#     |  2   |      |      |  r2  |  s8  |      |  r2  |  r2  |  r2  |      |  s9  |      |
+#     |  3   |      |      |  r5  |  r5  |      |  r5  |  r5  |  r5  |      |  r5  |      |
+#     |  4   |  10  |  3   |      |      |  s5  |      |      |      |  2   |      |  s4  |
+#     |  5   |      |      |  r7  |  r7  |      |  r7  |  r7  |  r7  |      |  r7  |      |
+#     |  6   |      |  3   |      |      |  s5  |      |      |      |  11  |      |  s4  |
+#     |  7   |      |  3   |      |      |  s5  |      |      |      |  12  |      |  s4  |
+#     |  8   |      |  13  |      |      |  s5  |      |      |      |      |      |  s4  |
+#     |  9   |      |  14  |      |      |  s5  |      |      |      |      |      |  s4  |
+#     |  10  |      |      |  s7  |      |      |  s6  |      | s15  |      |      |      |
+#     |  11  |      |      |  r0  |  s8  |      |  r0  |  r0  |  r0  |      |  s9  |      |
+#     |  12  |      |      |  r1  |  s8  |      |  r1  |  r1  |  r1  |      |  s9  |      |
+#     |  13  |      |      |  r3  |  r3  |      |  r3  |  r3  |  r3  |      |  r3  |      |
+#     |  14  |      |      |  r4  |  r4  |      |  r4  |  r4  |  r4  |      |  r4  |      |
+#     |  15  |      |      |  r6  |  r6  |      |  r6  |  r6  |  r6  |      |  r6  |      |
 #     +------+------+------+------+------+------+------+------+------+------+------+------+
 #     """
