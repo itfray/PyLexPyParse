@@ -2,62 +2,90 @@
 GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
-RULES = """
-        program -> section_prgrname section_uses sub_sections section_program;
-
-
-        sub_sections -> sub_sections sub_section |
-                        ε;
-        sub_section -> section_var |
-                       section_const |
-                       section_type |
-                       section_label;
-
-
-        section_prgrname -> 'program' ID ';' |
-                            'unit' ID ';' |
-                             ε;
-
-
-        section_uses -> section_uses uses |
-                        ε;
-        uses -> 'uses' list_ids ';';
-        list_ids -> list_ids ',' ID |
-                    ID;
-
-
-        section_var -> 'var' decls;
-        decls -> decls decl ';' |
-                 decl ';' ;
-        list_exprs -> list_exprs ',' expr |
-                      expr;
-        decl -> list_ids ':' ID |
-                ID ':' ID ':=' expr |
-                ID ':' ID '=' expr |
-                ID ':=' expr |
-                '(' list_ids ')' ':=' '(' list_exprs ')';
-
-
-        section_const -> 'const';
-
-
-        section_type -> 'type';
-
-
-        section_label -> 'label';
-
-
-        section_program -> block '.';
-        block -> 'begin' stmts 'end';
-        stmts -> stmts stmt |
-                 ε;
-        stmt -> ';';
-
-
-        expr -> ID |
-                NUM |
-                STR
-        """
+# RULES = """
+#         program -> section_prgrname section_uses sub_sections block '.';
+#
+#
+#         sub_sections -> sub_sections sub_section |
+#                         ε;
+#         sub_section -> section_var |
+#                        section_const |
+#                        section_type |
+#                        section_label;
+#
+#
+#         section_prgrname -> 'program' ID ';' |
+#                             'unit' ID ';' |
+#                              ε;
+#
+#
+#         section_uses -> section_uses uses |
+#                         ε;
+#         uses -> 'uses' list_ids ';';
+#         list_ids -> list_ids ',' ID |
+#                     ID;
+#
+#
+#         section_var -> 'var';
+#
+#
+#         section_const -> 'const';
+#
+#
+#         section_type -> 'type';
+#
+#
+#         section_label -> 'label';
+#
+#
+#         block -> 'begin' stmts 'end';
+#         stmts -> stmts stmt |
+#                  ε;
+#         stmt -> expr ';' |
+#                 ';' |
+#                 block;
+#
+#         expr -> rel;
+#         rel -> rel '<' add |
+#                rel '<=' add |
+#                rel '>' add |
+#                rel '>=' add |
+#                rel '<>' add |
+#                rel '=' add |
+#                add;
+#         add -> add '+' mul |
+#                add '-' mul |
+#                add 'or' mul |
+#                add 'xor' mul |
+#                mul;
+#         mul -> mul '*' unar |
+#                mul '/' unar |
+#                mul 'div' unar |
+#                mul 'mod' unar |
+#                mul 'and' unar |
+#                mul 'shl' unar |
+#                mul 'shr' unar |
+#                mul 'as' unar |
+#                mul 'is' unar |
+#                unar;
+#         unar -> '@' iter |
+#                 'not' iter |
+#                 iter '^' |
+#                 '+' iter |
+#                 '-' iter |
+#                 'new' iter |
+#                 iter;
+#         iter -> slice '[' NUM ']' |
+#                 slice;
+#         slice -> factor '[' NUM ':' NUM ':' NUM ']' |
+#                  factor '[' NUM ':' NUM ']' |
+#                  factor '?' '[' NUM ':' NUM ':' NUM ']' |
+#                  factor '?' '[' NUM ':' NUM ']' |
+#                  factor;
+#         factor -> NUM |
+#                   ID |
+#                   STR
+#         """
 RULES = """
         program -> section_prgrname section_uses sub_sections block '.';
 
@@ -131,12 +159,12 @@ RULES = """
                 '-' iter |
                 'new' iter |
                 iter;
-        iter -> factor '[' NUM ':' NUM ':' NUM ']' |
-                factor '[' NUM ':' NUM ']' |
-                factor '?' '[' NUM ':' NUM ':' NUM ']' |
-                factor '?' '[' NUM ':' NUM ']' |
+        iter -> factor '[' slice ']' |
                 factor;
-        factor -> NUM |
+        slice -> slice ':' expr |
+                 expr;
+        factor -> '(' expr ')' |
+                  NUM |
                   ID |
                   STR
         """
