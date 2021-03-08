@@ -1,5 +1,6 @@
 import struct
 import random
+import time
 from lexer import ILexer, Token
 from .isparser import (ISParser, Node, SParserError,
                        NoneLexerError, ParseSyntaxError)
@@ -67,6 +68,9 @@ class Rule:
 
     def __repr__(self):
         return f"Rules(key={str(self.key)}, value={self.value})"
+
+    def to_tuple(self)-> tuple:
+        return (self.key, *self.value)
 
 
 class IndRule(Rule):
@@ -163,6 +167,11 @@ class LR0Point:
     def __repr__(self):
         return f"LR0Point(rule={self.rule}, iptr={self.iptr})"
 
+    def to_tuple(self)-> tuple:
+        if self.rule is None:
+            return None
+        return (self.rule.key, *self.rule.value, self.iptr)
+
 
 class LR1Point(LR0Point):
     """
@@ -210,6 +219,11 @@ class LR1Point(LR0Point):
 
     def __repr__(self):
         return f"LR1Point(rule={self.rule}, iptr={self.iptr}, lookahead={self.lookahead})"
+
+    def to_tuple(self)-> tuple:
+        if self.rule is None:
+            return None
+        return (self.rule.key, *self.rule.value, self.iptr, *self.lookahead)
 
 
 class LRState:
@@ -349,10 +363,10 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
     :param entry_lrps: list of LR-points who need calulate set of CLOSURE(...)
     :return: list of LR-points for LR-state
     """
-    lrpoints = []                   # CLOSURE(...), list of LR-points
+    lrpoints = {}                   # CLOSURE(...), list of LR-points
     queue = []                      # processing queue
     for lrpoint in entry_lrps:      # add all entry LR-points
-        lrpoints.append(lrpoint)
+        lrpoints[lrpoint.to_tuple()] = lrpoint
         queue.append(lrpoint)
     while len(queue) > 0:           # breadth-first search (BFS)
         lrpoint = queue.pop(0)
@@ -363,16 +377,16 @@ def closure_LR1(rules: list, terminal_func, entry_lrps: list)-> list:
         B = rule.value[iptr]                            # calculate B
         b = rule.value[iptr + 1] \
             if iptr < len(rule.value) - 1 else None     # calculate β
-        firstb = first_term(rules, terminal_func, b)  # calculate FIRST(β)
+        firstb = first_term(rules, terminal_func, b)    # calculate FIRST(β)
         if len(firstb) == 0:
-            firstb += lrpoint.lookahead               # calculate FIRST(a)
+            firstb += lrpoint.lookahead                 # calculate FIRST(a)
         for rule in rules:
             if B == rule.key:
                 new_lrp = LR1Point(rule=rule, iptr=0, lookahead=firstb)  # add rule [B -> ●γ, FIRST(βa)]
-                if new_lrp not in lrpoints:                              # if lrpoints not have new_lrp
+                if new_lrp.to_tuple() not in lrpoints:                   # if lrpoints not have new_lrp
                     queue.append(new_lrp)
-                    lrpoints.append(new_lrp)          # add rule [B -> ●γ, b]
-    return lrpoints
+                    lrpoints[new_lrp.to_tuple()] = new_lrp               # add rule [B -> ●γ, b]
+    return [lrpoints[key_lrp] for key_lrp in lrpoints]
 
 def goto_LR1Point(lrpoints: list, value)-> list:
     """
@@ -430,7 +444,6 @@ def create_LR1States(rules: list, term_func, start_lrp: LR1Point)-> list:
             new_lrst = None
             for lrps, lrst in created_lrsts:      # find LR-state by GOTO LR-points
                 if lrps == new_lrps:              # if LR-state is already created
-                    new_lrps = lrps
                     new_lrst = lrst
                     break
             if new_lrst is None:                  # create new LR-state
