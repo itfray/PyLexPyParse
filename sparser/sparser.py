@@ -497,14 +497,22 @@ def merge_LR1_states(lrst1: LRState, lrst2: LRState)-> LRState:
     for key in lrst1.goto:                        # add all goto transitions from lrst1
         lrst = lrst1.goto[key]
         new_lrst.goto[key] = lrst                 # add goto transition
-        lrst.rgoto[key].remove(lrst1)             # fix rgoto transition in other states
+        try:
+            lrst.rgoto[key].remove(lrst1)             # fix rgoto transition in other states
+        except ValueError:
+            pass
+            print("merge_LR1_states.ValueError: lrst1. Error lrst.rgoto[key].remove(lrst1)!!!")
         lrst.rgoto[key].append(new_lrst)
 
     for key in lrst2.goto:                        # add all goto transitions from lrst2
         lrst = lrst2.goto[key]
         if new_lrst.goto.get(key, None) is None:
             new_lrst.goto[key] = lrst             # add goto transition
-        lrst.rgoto[key].remove(lrst2)             # fix rgoto transition in other states
+        try:
+            lrst.rgoto[key].remove(lrst2)             # fix rgoto transition in other states
+        except ValueError:
+            pass
+            print("merge_LR1_states.ValueError: lrst2. Error lrst.rgoto[key].remove(lrst2)!!!")
         lrst.rgoto[key].append(new_lrst)
 
     new_lrst.rgoto = {key: lrst1.rgoto[key].copy()  # add all rgoto transitions from lrst1
