@@ -41,12 +41,18 @@ RULES = """
         block -> 'begin' stmts 'end';
         stmts -> stmts ';' stmt |
                  stmt;
-        stmt -> expr |
+        stmt -> inner_var |
                 asgn |
                 block |
                 'if' expr 'then' stmt |
                 'if' expr 'then' stmt 'else' stmt |
                 ε;
+        
+        inner_var -> 'var' ID ':=' expr |
+                     'var' ID ':' ID '=' expr |
+                     'var' ID ':' ID ':=' expr |
+                     'var' list_ids2 ':' ID;
+        list_ids2 -> list_ids ',' ID;
         
         asgn -> ptr ':=' expr |
                 ptr '+=' expr |
