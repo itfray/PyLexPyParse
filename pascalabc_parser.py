@@ -130,9 +130,17 @@ RULES = """
         sel -> sel '.' ID |
                factor;
         factor -> '(' expr ')' |
-                  NUM |
                   ID |
-                  STR
+                  const_expr;
+        
+        const_expr -> NUM |
+                      STR |
+                      range;
+                  
+        range -> rng_brdr '..' rng_brdr;
+        rng_brdr -> NUM |
+                    ID |
+                    STR
         """
 TOKENS = ('ID', 'NUM', 'STR',)
 STAB_FILENAME = "pascalabc_stab.prstab"
