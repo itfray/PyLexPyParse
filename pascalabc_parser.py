@@ -60,8 +60,12 @@ RULES = """
                 ptr '*=' expr |
                 prt '/=' expr;
 
-        expr -> ternar;
-        ternar -> expr '?' expr ':' expr |
+        expr -> tuple;
+        tuple -> '(' list_exprs ')' |
+                 ternar;
+        list_exprs -> list_exprs ',' expr |
+                      expr;
+        ternar -> ternar '?' expr ':' expr |
                   rel;
         rel -> rel '<' add |
                rel '<=' add |
