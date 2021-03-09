@@ -39,12 +39,12 @@ RULES = """
 
 
         block -> 'begin' stmts 'end';
-        stmts -> stmts stmt |
-                 ε;
-        stmt -> expr ';' |
-                asgn ';' |
-                ';' |
-                block;
+        stmts -> stmts ';' stmt |
+                 stmt;
+        stmt -> expr |
+                asgn |
+                block |
+                ε;
         
         asgn -> ptr ':=' expr |
                 ptr '+=' expr |
@@ -102,7 +102,7 @@ RULES = """
                   ID |
                   STR
         """
-TOKENS = ('ID', 'NUM', 'STR')
+TOKENS = ('ID', 'NUM', 'STR',)
 STAB_FILENAME = "pascalabc_stab.prstab"
 
 
