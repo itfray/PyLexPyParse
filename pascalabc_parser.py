@@ -37,8 +37,12 @@ RULES = """
         list_ids2 -> list_ids ',' ID;
 
 
-        section_const -> 'const';
-
+        section_const -> 'const' consts;
+        consts -> consts const ';' |
+                  const ';';
+        const -> ID '=' expr |
+                 ID ':' ID '=' expr;
+                 
 
         section_type -> 'type';
 
