@@ -161,8 +161,9 @@ RULES = """
                 iter;
         iter -> factor '[' slice ']' |
                 factor;
-        slice -> expr ':' slice |
-                 expr;
+        slice -> slice ':' slice |
+                 expr |
+                 ε;
         factor -> '(' expr ')' |
                   NUM |
                   ID |
