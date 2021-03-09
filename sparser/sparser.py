@@ -497,22 +497,14 @@ def merge_LR1_states(lrst1: LRState, lrst2: LRState)-> LRState:
     for key in lrst1.goto:                        # add all goto transitions from lrst1
         lrst = lrst1.goto[key]
         new_lrst.goto[key] = lrst                 # add goto transition
-        try:
-            lrst.rgoto[key].remove(lrst1)             # fix rgoto transition in other states
-        except ValueError:
-            pass
-            print("merge_LR1_states.ValueError: lrst1. Error lrst.rgoto[key].remove(lrst1)!!!")
+        lrst.rgoto[key].remove(lrst1)             # fix rgoto transition in other states
         lrst.rgoto[key].append(new_lrst)
 
     for key in lrst2.goto:                        # add all goto transitions from lrst2
         lrst = lrst2.goto[key]
         if new_lrst.goto.get(key, None) is None:
             new_lrst.goto[key] = lrst             # add goto transition
-        try:
-            lrst.rgoto[key].remove(lrst2)             # fix rgoto transition in other states
-        except ValueError:
-            pass
-            print("merge_LR1_states.ValueError: lrst2. Error lrst.rgoto[key].remove(lrst2)!!!")
+        lrst.rgoto[key].remove(lrst2)             # fix rgoto transition in other states
         lrst.rgoto[key].append(new_lrst)
 
     new_lrst.rgoto = {key: lrst1.rgoto[key].copy()  # add all rgoto transitions from lrst1
@@ -552,17 +544,16 @@ def states_LR1_to_LALR1(lrstates: list)-> list:
                 pos_j = i + 1
             for j in range(pos_j, len(lrstates)):
                 pos_j = j
-                if len(lrstates[i].lrpoints) == len(lrstates[j].lrpoints):
-                    merge_flag = can_merge_LR1_states(lrstates[i], lrstates[j])
-                if merge_flag:
+                if i != j and\
+                   can_merge_LR1_states(lrstates[i], lrstates[j]):
+                    new_lrst = merge_LR1_states(lrstates[pos_i], lrstates[pos_j])
+                    lrstates[pos_i] = new_lrst
+                    lrstates.pop(pos_j)
+                    pos_j -= 1
+                    merge_flag = True
                     break
             if merge_flag:
                 break
-        if merge_flag:
-            new_lrst = merge_LR1_states(lrstates[pos_i], lrstates[pos_j])
-            lrstates[pos_i] = new_lrst
-            lrstates.pop(pos_j)
-            pos_j -= 1
     for i in range(len(lrstates)):              # fix indices in LR-states
         lrstates[i].index = i
     return lrstates
