@@ -44,6 +44,8 @@ RULES = """
         stmt -> expr |
                 asgn |
                 block |
+                'if' expr 'then' stmt |
+                'if' expr 'then' stmt 'else' stmt |
                 ε;
         
         asgn -> ptr ':=' expr |
