@@ -161,7 +161,7 @@ RULES = """
                 iter;
         iter -> factor '[' slice ']' |
                 factor;
-        slice -> slice ':' expr |
+        slice -> expr ':' slice |
                  expr;
         factor -> '(' expr ')' |
                   NUM |
