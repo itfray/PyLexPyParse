@@ -1,5 +1,3 @@
-﻿label 1, 2, 3;
-label b, c, a;
-label 8, 7, 6;
-begin
+﻿begin
+  a?[0:10:2][::-1][1] := 200;
 end.

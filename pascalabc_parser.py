@@ -121,8 +121,8 @@ RULES = """
                   ε;
         iter -> sel iter_op |
                 sel;
-        iter_op -> '[' slice ']' iter_op |
-                   '?[' slice ']' iter_op |
+        iter_op -> iter_op '[' slice ']' |
+                   iter_op '?[' slice ']' |
                    ε;
         slice -> slice ':' slice |
                  expr |
