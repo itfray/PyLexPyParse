@@ -30,18 +30,25 @@ RULES = """
         vars -> vars var ';' |
                 var ';';
         var -> ID ':=' expr |
-               ID ':' ID '=' expr |
-               ID ':' ID ':=' expr |
-               list_ids2 ':' ID |
-               '(' list_ids ')' ':=' expr;
+               ID ':' var_type '=' expr |
+               ID ':' var_type ':=' expr |
+               list_ids2 ':' var_type |
+               '(' list_ids2 ')' ':=' expr;
         list_ids2 -> list_ids ',' ID;
+        
+        var_type -> '(' list_var_types2 ')' |
+                    range |
+                    ID;
+        list_var_types ->  list_var_types ',' var_type |
+                           var_type;
+        list_var_types2 -> list_var_types ',' var_type;
 
 
         section_const -> 'const' consts;
         consts -> consts const ';' |
                   const ';';
         const -> ID '=' expr |
-                 ID ':' ID '=' expr;
+                 ID ':' var_type '=' expr;
                  
 
         section_type -> 'type';

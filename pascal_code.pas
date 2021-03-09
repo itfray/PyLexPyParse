@@ -1,3 +1,3 @@
 ﻿begin
-  var a := 0..10;
+  var t: 1..10 := 1;
 end.
