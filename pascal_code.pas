@@ -1,3 +1,4 @@
 ﻿begin
-  var a: array[1..2,3..4] of integer;
+  var a: integer;
+  var b, c, d: integer;
 end.
