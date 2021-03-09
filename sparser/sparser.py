@@ -1205,7 +1205,8 @@ class SParser(ISParser):
                     raise UncorrectSParseTabErr(f"'{self.__sid2symbol_tab[rule.key]}' " +
                                                 "not found in the SParseTable!!!")
                 st_stack.append(cell.value)  # go to new state
-                buf[-1].kind = rule.key
+                if buf[-1].kind is None:
+                    buf[-1].kind = rule.key
             elif cell.action == cell.ACC:
                 root = buf[-1]  # set root
                 return root

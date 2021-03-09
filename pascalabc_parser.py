@@ -26,7 +26,15 @@ RULES = """
                     ID;
 
 
-        section_var -> 'var';
+        section_var -> 'var' vars;
+        vars -> vars var ';' |
+                var ';';
+        var -> ID ':=' expr |
+               ID ':' ID '=' expr |
+               ID ':' ID ':=' expr |
+               list_ids2 ':' ID |
+               '(' list_ids ')' ':=' expr;
+        list_ids2 -> list_ids ',' ID;
 
 
         section_const -> 'const';
@@ -44,17 +52,14 @@ RULES = """
         stmt -> inner_var |
                 asgn |
                 block |
-                'if' expr 'then' stmt |
-                'if' expr 'then' stmt 'else' stmt |
+                if |
                 ε;
         
-        inner_var -> 'var' ID ':=' expr |
-                     'var' ID ':' ID '=' expr |
-                     'var' ID ':' ID ':=' expr |
-                     'var' list_ids2 ':' ID |
-                     'var' '(' list_ids ')' ':=' expr |
+        if -> 'if' expr 'then' stmt |
+              'if' expr 'then' stmt 'else' stmt;
+        
+        inner_var -> 'var' var |
                      '(' list_idvars ')' ':=' expr;
-        list_ids2 -> list_ids ',' ID;
         list_idvars -> list_idvars ',' 'var' ID |
                        'var' ID;
         
