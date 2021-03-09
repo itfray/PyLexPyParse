@@ -47,7 +47,11 @@ RULES = """
         section_type -> 'type';
 
 
-        section_label -> 'label';
+        section_label -> 'label' labels ';';
+        labels -> labels ',' label |
+                  label;
+        label -> ID |
+                 NUM;
 
 
         block -> 'begin' stmts 'end';
