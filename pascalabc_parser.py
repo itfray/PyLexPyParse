@@ -29,19 +29,27 @@ RULES = """
         section_var -> 'var' vars;
         vars -> vars var ';' |
                 var ';';
-        var -> ID ':=' expr |
-               ID ':' var_type '=' expr |
-               ID ':' var_type ':=' expr |
-               list_ids2 ':' var_type |
+        var -> var_decl |
+               var_decl '=' expr |
+               var_decl ':=' expr |
+               ID ':=' expr |
                '(' list_ids2 ')' ':=' expr;
         list_ids2 -> list_ids ',' ID;
         
+        var_decl -> list_ids ':' var_type;
+        
         var_type -> '(' list_var_types2 ')' |
                     range |
+                    'array' 'of' var_type |
+                    'array' 'of' '[' arr_nums ']' |
                     ID;
         list_var_types ->  list_var_types ',' var_type |
                            var_type;
         list_var_types2 -> list_var_types ',' var_type;
+        
+        arr_nums -> arr_nums ',' arr_nums |
+                    NUM |
+                    ε;
 
 
         section_const -> 'const' consts;
