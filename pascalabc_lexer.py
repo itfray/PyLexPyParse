@@ -44,7 +44,7 @@ SPECIFICATION = [
     ('RANGE', r'\.\.'),
     ('PTR', r'[\^@]'),
     ('LAMBDA', r'->'),
-    ('COND', r'\?'),
+    ('COND', r'\?\[?'),
     ('LINE_COMMENT', r'//.*'),
     ('OP_ASN', r'[-\+\*/:]='),
     ('OP_ARTHM', r'(\*\*|[-\*\+/])'),

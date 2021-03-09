@@ -164,6 +164,7 @@ RULES = """
         iter -> factor iter_op |
                 factor;
         iter_op -> '[' slice ']' iter_op |
+                   '?[' slice ']' iter_op |
                    ε;
         slice -> slice ':' slice |
                  expr |
