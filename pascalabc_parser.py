@@ -2,90 +2,6 @@
 GOAL_NTERM = "program"
 END_TERM = '⊥'
 EMPTY_TERM = 'ε'
-# RULES = """
-#         program -> section_prgrname section_uses sub_sections block '.';
-#
-#
-#         sub_sections -> sub_sections sub_section |
-#                         ε;
-#         sub_section -> section_var |
-#                        section_const |
-#                        section_type |
-#                        section_label;
-#
-#
-#         section_prgrname -> 'program' ID ';' |
-#                             'unit' ID ';' |
-#                              ε;
-#
-#
-#         section_uses -> section_uses uses |
-#                         ε;
-#         uses -> 'uses' list_ids ';';
-#         list_ids -> list_ids ',' ID |
-#                     ID;
-#
-#
-#         section_var -> 'var';
-#
-#
-#         section_const -> 'const';
-#
-#
-#         section_type -> 'type';
-#
-#
-#         section_label -> 'label';
-#
-#
-#         block -> 'begin' stmts 'end';
-#         stmts -> stmts stmt |
-#                  ε;
-#         stmt -> expr ';' |
-#                 ';' |
-#                 block;
-#
-#         expr -> rel;
-#         rel -> rel '<' add |
-#                rel '<=' add |
-#                rel '>' add |
-#                rel '>=' add |
-#                rel '<>' add |
-#                rel '=' add |
-#                add;
-#         add -> add '+' mul |
-#                add '-' mul |
-#                add 'or' mul |
-#                add 'xor' mul |
-#                mul;
-#         mul -> mul '*' unar |
-#                mul '/' unar |
-#                mul 'div' unar |
-#                mul 'mod' unar |
-#                mul 'and' unar |
-#                mul 'shl' unar |
-#                mul 'shr' unar |
-#                mul 'as' unar |
-#                mul 'is' unar |
-#                unar;
-#         unar -> '@' iter |
-#                 'not' iter |
-#                 iter '^' |
-#                 '+' iter |
-#                 '-' iter |
-#                 'new' iter |
-#                 iter;
-#         iter -> slice '[' NUM ']' |
-#                 slice;
-#         slice -> factor '[' NUM ':' NUM ':' NUM ']' |
-#                  factor '[' NUM ':' NUM ']' |
-#                  factor '?' '[' NUM ':' NUM ':' NUM ']' |
-#                  factor '?' '[' NUM ':' NUM ']' |
-#                  factor;
-#         factor -> NUM |
-#                   ID |
-#                   STR
-#         """
 RULES = """
         program -> section_prgrname section_uses sub_sections block '.';
 
@@ -130,14 +46,11 @@ RULES = """
                 ';' |
                 block;
         
-        asgn -> asgn_id ':=' expr |
-                asgn_id '+=' expr |
-                asgn_id '-=' expr |
-                asgn_id '*=' expr |
-                asgn_id '/=' expr;
-        asgn_id -> ID iter_op |
-                   ID ptr_op |
-                   ID;
+        asgn -> ptr ':=' expr |
+                ptr '+=' expr |
+                ptr '-=' expr |
+                ptr '*=' expr |
+                prt '/=' expr;
 
         expr -> ternar;
         ternar -> expr '?' expr ':' expr |
@@ -174,14 +87,16 @@ RULES = """
                iter;
         ptr_op -> ptr_op '^' |
                   ε;
-        iter -> factor iter_op |
-                factor;
+        iter -> sel iter_op |
+                sel;
         iter_op -> '[' slice ']' iter_op |
                    '?[' slice ']' iter_op |
                    ε;
         slice -> slice ':' slice |
                  expr |
                  ε;
+        sel -> sel '.' ID |
+               factor;
         factor -> '(' expr ')' |
                   NUM |
                   ID |
