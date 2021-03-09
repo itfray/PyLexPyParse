@@ -199,26 +199,26 @@ if __name__ == "__main__":
     print(time() - t0, " sec")
     print()
 
-    stab_filename = STAB_FILENAME
-    parser = SParser(lexer=lexer,
-                     tokens=TOKENS,
-                     goal_nterm=GOAL_NTERM,
-                     end_term=END_TERM,
-                     empty_term=EMPTY_TERM,
-                     parsing_of_rules=RULES)
-    for rule in parser.rules:
-        print(rule)
-    print()
+    parser = SParser(lexer=lexer)
     t0 = time()
-    if os.path.exists(stab_filename) and \
-            os.path.isfile(stab_filename):
-        parser.read_stab_from_file(stab_filename)
+    if os.path.exists(STAB_FILENAME) and \
+            os.path.isfile(STAB_FILENAME):
+        parser.read_stab_from_file(STAB_FILENAME)
         print("sparse table readed")
     else:
+        parser.tokens = TOKENS
+        parser.goal_nterm = GOAL_NTERM
+        parser.end_term = END_TERM
+        parser.empty_term = EMPTY_TERM
+        parser.parse_rules(RULES)
         parser.create_sparse_tab()
-        parser.write_stab_to_file(stab_filename)
+        parser.write_stab_to_file(STAB_FILENAME)
         print("sparse table created")
     print("time for sparse table: ", time() - t0, " sec")
+    print()
+    print("parser's rules: ")
+    for rule in parser.rules:
+        print(rule)
     print()
     t0 = time()
     node = parser.parse()
