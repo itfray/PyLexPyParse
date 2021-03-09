@@ -125,16 +125,19 @@ RULES = """
         block -> 'begin' stmts 'end';
         stmts -> stmts stmt |
                  ε;
-        stmt -> asgn ';' |
+        stmt -> expr ';' |
+                asgn ';' |
                 ';' |
                 block;
         
-        asgn -> expr ':=' expr |
-                expr '+=' expr |
-                expr '-=' expr |
-                expr '*=' expr |
-                expr '/=' expr |
-                expr;
+        asgn -> asgn_id ':=' expr |
+                asgn_id '+=' expr |
+                asgn_id '-=' expr |
+                asgn_id '*=' expr |
+                asgn_id '/=' expr;
+        asgn_id -> ID iter_op |
+                   ID ptr_op |
+                   ID;
 
         expr -> ternar;
         ternar -> expr '?' expr ':' expr |
@@ -184,17 +187,6 @@ RULES = """
                   ID |
                   STR
         """
-"""
-        asgn -> asgn_id ':=' expr |
-                asgn_id '+=' expr |
-                asgn_id '-=' expr |
-                asgn_id '*=' expr |
-                asgn_id '/=' expr |
-                expr;
-        asgn_id -> ID iter_op |
-                   ID ptr_op |
-                   ID;
-"""
 TOKENS = ('ID', 'NUM', 'STR')
 STAB_FILENAME = "pascalabc_stab.prstab"
 
