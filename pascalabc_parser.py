@@ -51,14 +51,21 @@ RULES = """
         inner_var -> 'var' ID ':=' expr |
                      'var' ID ':' ID '=' expr |
                      'var' ID ':' ID ':=' expr |
-                     'var' list_ids2 ':' ID;
+                     'var' list_ids2 ':' ID |
+                     'var' '(' list_ids ')' ':=' expr |
+                     '(' list_idvars ')' ':=' expr;
         list_ids2 -> list_ids ',' ID;
+        list_idvars -> list_idvars ',' 'var' ID |
+                       'var' ID;
         
         asgn -> ptr ':=' expr |
                 ptr '+=' expr |
                 ptr '-=' expr |
                 ptr '*=' expr |
-                prt '/=' expr;
+                prt '/=' expr |
+                '(' list_ptrs ')' ':=' expr;
+        list_ptrs -> list_ptrs ',' ptr |
+                     ptr;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
