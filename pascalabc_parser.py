@@ -129,7 +129,9 @@ RULES = """
                 ';' |
                 block;
 
-        expr -> rel;
+        expr -> ternar;
+        ternar -> expr '?' expr ':' expr |
+                  rel;
         rel -> rel '<' add |
                rel '<=' add |
                rel '>' add |
@@ -159,8 +161,10 @@ RULES = """
                 '-' iter |
                 'new' iter |
                 iter;
-        iter -> factor '[' slice ']' |
+        iter -> factor iter_op |
                 factor;
+        iter_op -> '[' slice ']' iter_op |
+                   ε;
         slice -> slice ':' slice |
                  expr |
                  ε;
