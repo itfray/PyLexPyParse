@@ -81,6 +81,7 @@ RULES = """
                 asgn |
                 block |
                 if |
+                case |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -99,6 +100,13 @@ RULES = """
                 '(' list_ptrs ')' ':=' expr;
         list_ptrs -> list_ptrs ',' ptr |
                      ptr;
+        
+        case -> 'case' expr 'of' case_list 'end' |
+                'case' expr 'of' case_list 'else' stmts 'end';
+        case_list -> case_list ';' case_element |
+                     case_element;
+        case_element -> const_expr ':' stmt |
+                        ε;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
