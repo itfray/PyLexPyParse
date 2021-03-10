@@ -84,6 +84,7 @@ RULES = """
                 case |
                 for |
                 loop |
+                foreach |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -117,6 +118,11 @@ RULES = """
                    'var' ID ':=' expr;
         
         loop -> 'loop' expr 'do' stmt;
+        
+        foreach -> 'foreach' foreach_var 'in' expr 'do' stmt;
+        foreach_var -> ID |
+                       'var' ID |
+                       var_decl;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
