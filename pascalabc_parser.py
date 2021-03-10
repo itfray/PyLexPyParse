@@ -83,6 +83,7 @@ RULES = """
                 if |
                 case |
                 for |
+                loop |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -114,6 +115,8 @@ RULES = """
         for_var -> var_decl ':=' expr |
                    ID ':=' expr |
                    'var' ID ':=' expr;
+        
+        loop -> 'loop' expr 'do' stmt;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |

@@ -1,6 +1,6 @@
-﻿var 
-  a: integer;
+﻿var
+  a: integer := 2;
 begin
-  for b: integer := 0 to 10 do
-    a := 1;
+  loop a do
+    a := 3;
 end.
