@@ -1,11 +1,6 @@
 ﻿var 
-  a := 0;
+  a: integer;
 begin
-  case a of
-    1: a := 1;
-    2: a := 11;
-    3: a := 111;
-    else
-      a := 1111; a := 12;
-  end;
+  for b: integer := 0 to 10 do
+    a := 1;
 end.

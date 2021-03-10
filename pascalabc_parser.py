@@ -82,6 +82,7 @@ RULES = """
                 block |
                 if |
                 case |
+                for |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -107,6 +108,12 @@ RULES = """
                      case_element;
         case_element -> const_expr ':' stmt |
                         ε;
+        
+        for -> 'for' for_var 'to' expr 'do' stmt |
+               'for' for_var 'downto' expr 'do' stmt;
+        for_var -> var_decl ':=' expr |
+                   ID ':=' expr |
+                   'var' ID ':=' expr;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
