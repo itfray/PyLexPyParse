@@ -99,7 +99,7 @@ RULES = """
                 ptr '+=' expr |
                 ptr '-=' expr |
                 ptr '*=' expr |
-                prt '/=' expr |
+                ptr '/=' expr |
                 '(' list_ptrs ')' ':=' expr;
         list_ptrs -> list_ptrs ',' ptr |
                      ptr;
