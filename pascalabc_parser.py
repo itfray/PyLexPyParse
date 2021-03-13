@@ -93,7 +93,8 @@ RULES = """
                 continue |
                 exit |
                 yield |
-                try |
+                try_except |
+                try_finally |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -150,8 +151,8 @@ RULES = """
         
         exit -> 'exit';
         
-        try -> 'try' stmts 'except' stmts 'end' |
-               'try' stmts 'except' except_block 'end';
+        try_except -> 'try' stmts 'except' stmts 'end' |
+                      'try' stmts 'except' except_block 'end';
         except_block -> on_list |
                         on_list 'else' stmts;
         on_list -> on_list ';' on_element |
@@ -159,6 +160,9 @@ RULES = """
         on_element -> 'on' var_decl 'do' stmt |
                       'on' var_type 'do' stmt |
                        ε;
+
+        try_finally -> 'try' stmts 'finally' stmts 'end';
+
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
