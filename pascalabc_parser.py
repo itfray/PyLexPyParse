@@ -85,6 +85,8 @@ RULES = """
                 for |
                 loop |
                 foreach |
+                while |
+                repeat |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -123,6 +125,11 @@ RULES = """
         foreach_var -> ID |
                        'var' ID |
                        var_decl;
+        
+        while -> 'while' expr 'do' stmt;
+        
+        repeat -> 'repeat' stmts 'until' expr;
+        
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
