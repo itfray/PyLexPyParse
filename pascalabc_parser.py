@@ -64,8 +64,10 @@ RULES = """
                  var_decl '=' expr;
                  
 
-        section_type -> 'type';
-
+        section_type -> 'type' types;
+        types -> types ';' type ';' |
+                 type ';';
+        type -> ID '=' var_type;
 
         section_label -> 'label' labels ';';
         labels -> labels ',' label |
