@@ -95,6 +95,8 @@ RULES = """
                 yield |
                 try_except |
                 try_finally |
+                raise |
+                lock |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -162,6 +164,10 @@ RULES = """
                        ε;
 
         try_finally -> 'try' stmts 'finally' stmts 'end';
+        
+        raise -> 'raise' expr;
+        
+        lock -> 'lock' expr 'do' stmt;
 
 
         expr -> tuple;
