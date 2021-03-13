@@ -1,11 +1,11 @@
-﻿label 1,2,3,4,5;
-begin
-  var i := 5;
-2: if i<0 then goto 1;
-  writeln(i);
-  Dec(i);
-  goto 2;
-1: 2
-4: 2
-5:
+﻿begin
+  var i: integer := 0;
+  var b: integer := 1;
+  try
+    b := b div i;
+  except
+    on System.DivideByZeroException do
+      writeln('divison error!!!');
+  end;
+  writeln('end process!!!');
 end.

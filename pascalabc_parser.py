@@ -89,6 +89,11 @@ RULES = """
                 repeat |
                 with |
                 goto |
+                break |
+                continue |
+                exit |
+                yield |
+                try |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -136,6 +141,23 @@ RULES = """
         
         goto -> 'goto' label;
         
+        yield -> 'yield' expr |
+                 'yield' 'sequence' expr;
+        
+        break -> 'break';
+        
+        continue -> 'continue';
+        
+        exit -> 'exit';
+        
+        try -> 'try' stmts 'except' stmts 'end' |
+               'try' stmts 'except' except_list 'end';
+        except_list -> except_list ';' except_element |
+                       except_element;
+        except_element -> 'on' var_decl 'do' stmt |
+                          'on' var_type 'do' stmt |
+                          'else' stmt |
+                          ε;
 
         expr -> tuple;
         tuple -> '(' list_exprs ')' |
