@@ -42,19 +42,33 @@ RULES = """
         
         var_type -> '(' list_var_types2 ')' |
                     range |
-                    'array' 'of' var_type |
-                    'array' '[' arr_inds ']' 'of' var_type |
+                    arr_type |
+                    set_type |
+                    file_type |
+                    seq_type |
+                    ptr_type |
                     ID;
         list_var_types ->  list_var_types ',' var_type |
                            var_type;
         list_var_types2 -> list_var_types ',' var_type;
         
+        arr_type -> 'array' 'of' var_type |
+                    'array' '[' arr_inds ']' 'of' var_type;
         arr_inds -> arr_rngs |
                     arr_commas;
         arr_rngs -> arr_rngs ',' range |
                     range;
         arr_commas -> arr_commas ',' |
                       ',';
+        
+        set_type -> 'set' 'of' var_type;
+        
+        file_type -> 'file' 'of' var_type |
+                     'file';
+                     
+        ptr_type -> '^' var_type;
+        
+        seq_type -> 'sequence' 'of' var_type;
 
 
         section_const -> 'const' consts;
@@ -68,6 +82,7 @@ RULES = """
         types -> types ';' type ';' |
                  type ';';
         type -> ID '=' var_type;
+        
 
         section_label -> 'label' labels ';';
         labels -> labels ',' label |
