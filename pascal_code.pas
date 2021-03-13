@@ -1,8 +1,10 @@
-﻿var 
-  p0: integer;
-  p1: ^integer;
-  p2: ^^integer;
-  p3: ^^^integer;
-  p4: ^^^^integer;
+﻿var
+  f: integer;
+  function foo(const a,b:integer): integer;
+  const
+    ppp = 12;
+  begin
+    foo := ppp + a + b;
+  end;
 begin
 end.

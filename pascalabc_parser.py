@@ -26,7 +26,9 @@ RULES = """
                     ID;
 
 
-        section_var -> 'var' vars;
+        section_var -> 'var' vars funcs |
+                       'var' vars |
+                       'var' funcs;
         vars -> vars var ';' |
                 var ';';
         var -> var_decl |
@@ -69,6 +71,29 @@ RULES = """
         ptr_type -> '^' var_type;
         
         seq_type -> 'sequence' 'of' var_type;
+        
+        funcs -> funcs ';' func |
+                 func ';';
+        func -> function |
+                procedure;
+        
+        procedure -> 'procedure' ID func_params func_body;
+        
+        function -> 'function' ID func_params ':' var_type func_body;
+        
+        func_body -> ';' sub_sections block |
+                     ';' block |
+                     ':=' expr;
+        
+        func_params -> '(' list_fparams ')' |
+                        '(' ')' |
+                        ε;
+        list_fparams -> list_fparams ';' fparams |
+                        fparams;
+        fparams -> 'var' fparams_decl |
+                   'const' fparams_decl |
+                    fparams_decl;
+        fparams_decl -> list_ids ':' var_type;
 
 
         section_const -> 'const' consts;
