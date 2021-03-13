@@ -87,6 +87,8 @@ RULES = """
                 foreach |
                 while |
                 repeat |
+                with |
+                goto |
                 ε;
         
         if -> 'if' expr 'then' stmt |
@@ -129,6 +131,10 @@ RULES = """
         while -> 'while' expr 'do' stmt;
         
         repeat -> 'repeat' stmts 'until' expr;
+
+        with -> 'with' list_ids 'do' stmt;
+        
+        goto -> 'goto' label;
         
 
         expr -> tuple;
