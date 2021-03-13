@@ -4,8 +4,11 @@
   try
     b := b div i;
   except
-    on System.DivideByZeroException do
-      writeln('divison error!!!');
+    on integer do
+      i := -1;
+    on a: integer do
+      i := 1;
+    else
+      i += 3;
   end;
-  writeln('end process!!!');
 end.
