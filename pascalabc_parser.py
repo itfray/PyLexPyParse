@@ -21,9 +21,9 @@ RULES = """
 
         section_uses -> section_uses uses |
                         ε;
-        uses -> 'uses' list_ids ';';
-        list_ids -> list_ids ',' ID |
-                    ID;
+        uses -> 'uses' list_sel_id ';';
+        list_sel_id -> list_sel_id ',' sel_id |
+                       sel_id;
 
 
         section_var -> 'var' vars funcs |
@@ -37,6 +37,8 @@ RULES = """
                var_decl ':=' expr |
                ID ':=' expr |
                '(' list_ids2 ')' ':=' expr;
+        list_ids -> list_ids ',' ID |
+                    ID;
         list_ids2 -> list_ids ',' ID;
         
         vars_decl -> list_ids2 ':' var_type;
@@ -68,7 +70,8 @@ RULES = """
         set_type -> 'set' 'of' var_type;
         
         file_type -> 'file' 'of' var_type |
-                     'file';
+                     'file' |
+                     'text';
                      
         ptr_type -> '^' var_type;
         
@@ -90,8 +93,8 @@ RULES = """
                  func ';';
         func -> func_hdr func_body;
 
-        func_hdr -> 'procedure' ID func_params |
-                    'function' ID func_params ':' var_type;
+        func_hdr -> 'procedure' sel_id func_params |
+                    'function' sel_id func_params ':' var_type;
         
         func_body -> ';' sub_sections block |
                      ';' block |
@@ -120,20 +123,46 @@ RULES = """
         fparams3 -> 'params' fparams3_decl;
         fparams1_decl -> var_decl |
                          vars_decl;
+        fparams1_decls -> fparams1_decls ';' fparams1_decl |
+                          fparams1_decl;
         fparams2_decl -> var_decl ':=' expr;
         fparams3_decl -> ID ':' 'array' 'of' var_type;
         
         methods -> methods method ';' |
                    method ';';
-        method -> method_hdr method_body;
+        method -> method_mods method_hdr method_specs method_body |
+                  method_mods prop_hdr prop_body method_specs;
+                  
+        method_mods -> method_mods method_mod |
+                       ε;
+        method_mod -> 'class';
+        
+        method_specs -> method_specs ';' method_spec |
+                        ε;
+        method_spec -> 'virtual' |
+                       'override' |
+                       'reintroduce' |
+                       'default' |
+                       'abstract';
 
         method_hdr -> 'constructor' 'create' func_params |
-                        'constructor' func_params |
-                        func_hdr;
+                      'constructor' func_params |
+                      'destructor' 'destroy' |
+                       func_hdr;
 
         method_body -> ';' sub_sections block |
-                         ';' block |
-                         ':=' expr;
+                       ';' block |
+                       ':=' expr;
+        
+        prop_hdr -> 'property' var_decl |
+                    'property' ind_prop_decl;
+        
+        ind_prop_decl -> ID '[' fparams1_decls ']' ':' var_type;
+        
+        prop_body -> 'read' expr 'write' stmt |
+                     'write' stmt 'read' expr |
+                     'read' expr |
+                     'write' stmt;
 
 
         section_const -> 'const' consts;
@@ -169,7 +198,15 @@ RULES = """
         obj_section_content -> vars methods |
                                vars |
                                methods;
-        class -> 'class' obj_sections 'end';
+        class -> class_mods 'class' base_class obj_sections 'end' |
+                 class_mods 'class' base_class;
+        base_class -> '(' list_sel_id ')' |
+                       ε;
+        class_mods -> class_mods class_mod |
+                      ε;
+        class_mod -> 'sealed' |
+                     'auto' |
+                     'abstract';
 
 
         block -> 'begin' stmts 'end';
@@ -318,11 +355,17 @@ RULES = """
                  ε;
         sel -> ptr '.' call_id |
                ptr '.' ID |
+               'inherited' call_id |
+               'inherited' ID |
+               'inherited' |
                factor;
         factor -> '(' expr ')' |
                   ID |
                   call |
                   const_expr;
+        
+        sel_id -> sel_id '.' ID |
+                  ID;
         
         call -> '(' expr ')' '(' optparams ')' |
                  ID '(' optparams ')' |

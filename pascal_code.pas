@@ -1,9 +1,12 @@
-﻿var
-  f: integer;
-  procedure forall(a: array of real; f: real->real);
-  begin
-    for var i := 0 to a.Length-1 do
-      a[i] := f(a[i]);
+﻿type
+  Person = class
+    name: string;
+    age: integer;
+    procedure foo(); virtual;
+    begin
+      ;
+    end;
+    property PersonName: string read name write name; virtual;
   end;
 begin
 end.
