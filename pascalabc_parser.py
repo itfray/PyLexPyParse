@@ -49,6 +49,7 @@ RULES = """
                     file_type |
                     seq_type |
                     ptr_type |
+                    record |
                     ID;
         list_var_types ->  list_var_types ',' var_type |
                            var_type;
@@ -72,14 +73,12 @@ RULES = """
         
         seq_type -> 'sequence' 'of' var_type;
         
-        funcs -> funcs ';' func |
+        funcs -> funcs func ';' |
                  func ';';
-        func -> function |
-                procedure;
-        
-        procedure -> 'procedure' ID func_params func_body;
-        
-        function -> 'function' ID func_params ':' var_type func_body;
+        func -> func_hdr func_body;
+
+        func_hdr -> 'procedure' ID func_params |
+                    'function' ID func_params ':' var_type;
         
         func_body -> ';' sub_sections block |
                      ';' block |
@@ -110,6 +109,18 @@ RULES = """
                          vars_decl;
         fparams2_decl -> var_decl ':=' expr;
         fparams3_decl -> ID ':' 'array' 'of' var_type;
+        
+        methods -> methods method ';' |
+                   method ';';
+        method -> method_hdr method_body;
+
+        method_hdr -> 'constructor' 'create' func_params |
+                        'constructor' func_params |
+                        func_hdr;
+
+        method_body -> ';' sub_sections block |
+                         ';' block |
+                         ':=' expr;
 
 
         section_const -> 'const' consts;
@@ -120,9 +131,10 @@ RULES = """
                  
 
         section_type -> 'type' types;
-        types -> types ';' type ';' |
+        types -> types type ';' |
                  type ';';
-        type -> ID '=' var_type;
+        type -> ID '=' var_type |
+                ID '=' class;
         
 
         section_label -> 'label' labels ';';
@@ -130,6 +142,21 @@ RULES = """
                   label;
         label -> ID |
                  NUM;
+                 
+                 
+        record -> 'record' obj_sections 'end';
+        obj_sections -> obj_sections obj_section |
+                        ε;
+        obj_section -> access_mod obj_section_content |
+                       obj_section_content;
+        access_mod -> 'public' |
+                      'protected' |
+                      'private' |
+                      'internal';
+        obj_section_content -> vars methods |
+                               vars |
+                               methods;
+        class -> 'class' obj_sections 'end';
 
 
         block -> 'begin' stmts 'end';
