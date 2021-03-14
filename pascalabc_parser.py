@@ -83,17 +83,33 @@ RULES = """
         
         func_body -> ';' sub_sections block |
                      ';' block |
-                     ':=' expr;
+                     ':=' expr |
+                     ';' 'forward' |
+                     ';' 'external' STR 'name' STR;
         
         func_params -> '(' list_fparams ')' |
                         '(' ')' |
                         ε;
-        list_fparams -> list_fparams ';' fparams |
-                        fparams;
-        fparams -> 'var' fparams_decl |
-                   'const' fparams_decl |
-                    fparams_decl;
-        fparams_decl -> list_ids ':' var_type;
+        list_fparams -> list_fparams1 ';' list_fparams2 |
+                        list_fparams1 ';' fparams3 |
+                        list_fparams1 |
+                        list_fparams2 |
+                        fparams3;
+        list_fparams1 -> list_fparams1 ';' fparams1 |
+                         fparams1;
+        list_fparams2 -> list_fparams2 ';' fparams2 |
+                         fparams2;
+        fparams1 -> 'var' fparams1_decl |
+                    'const' fparams1_decl |
+                    fparams1_decl;
+        fparams2 -> 'var' fparams2_decl |
+                   'const' fparams2_decl |
+                    fparams2_decl;
+        fparams3 -> 'params' fparams3_decl;
+        fparams1_decl -> var_decl |
+                         vars_decl;
+        fparams2_decl -> var_decl ':=' expr;
+        fparams3_decl -> ID ':' 'array' 'of' var_type;
 
 
         section_const -> 'const' consts;
