@@ -42,7 +42,7 @@ RULES = """
         vars_decl -> list_ids2 ':' var_type;
         var_decl -> ID ':' var_type;
         
-        var_type -> '(' list_var_types2 ')' |
+        var_type -> tuple_type |
                     range |
                     arr_type |
                     set_type |
@@ -50,6 +50,7 @@ RULES = """
                     seq_type |
                     ptr_type |
                     record |
+                    func_type |
                     ID;
         list_var_types ->  list_var_types ',' var_type |
                            var_type;
@@ -72,6 +73,18 @@ RULES = """
         ptr_type -> '^' var_type;
         
         seq_type -> 'sequence' 'of' var_type;
+        
+        tuple_type -> '(' list_var_types2 ')';
+        
+        func_type -> 'procedure' func_params |
+                     'function' func_params ':' var_type |
+                     '(' ')' '->' var_type |
+                     var_type '->' var_type |
+                     '(' list_var_types2 ')' '->' var_type |
+                     '(' ')' '->' '(' ')' |
+                     var_type '->' '(' ')' |
+                     '(' list_var_types2 ')' '->' '(' ')';
+                     
         
         funcs -> funcs func ';' |
                  func ';';
