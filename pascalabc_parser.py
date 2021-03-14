@@ -119,7 +119,8 @@ RULES = """
         block -> 'begin' stmts 'end';
         stmts -> stmts ';' stmt |
                  stmt;
-        stmt -> inner_var |
+        stmt -> expr |
+                inner_var |
                 asgn |
                 block |
                 if |
@@ -259,11 +260,20 @@ RULES = """
         slice -> slice ':' slice |
                  expr |
                  ε;
-        sel -> sel '.' ID |
+        sel -> ptr '.' call_id |
+               ptr '.' ID |
                factor;
         factor -> '(' expr ')' |
                   ID |
+                  call |
                   const_expr;
+        
+        call -> '(' expr ')' '(' optparams ')' |
+                 ID '(' optparams ')' |
+                 call '(' optparams ')';
+        optparams -> list_exprs |
+                     ε;
+        call_id -> ID '(' optparams ')';
         
         const_expr -> NUM |
                       STR |
