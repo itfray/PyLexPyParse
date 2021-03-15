@@ -380,6 +380,7 @@ if __name__ == "__main__":
     from str_reader.file_reader import FileStrReader
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from sparser.sparser import SParser
+    from work_with_syntax_tree import print_tokens_syntax_tree
     from pascalabc_lexer import (CASE_SENSITIVE, SKIP_KIND,
                                  SPECIFICATION, ID_KIND,
                                  KEYWORD_KIND, KEYWORDS,
@@ -431,4 +432,5 @@ if __name__ == "__main__":
     t0 = time()
     node = parser.parse()
     print("parsing time: ", time() - t0, " sec")
-    print(node)
+    print()
+    print_tokens_syntax_tree(parser, lexer, node)
