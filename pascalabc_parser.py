@@ -96,9 +96,7 @@ RULES = """
         func_hdr -> 'procedure' sel_id func_params |
                     'function' sel_id func_params ':' var_type;
         
-        func_body -> ';' sub_sections block |
-                     ';' block |
-                     ':=' expr |
+        func_body ->  method_body
                      ';' 'forward' |
                      ';' 'external' STR 'name' STR;
         
@@ -125,25 +123,14 @@ RULES = """
                          vars_decl;
         fparams1_decls -> fparams1_decls ';' fparams1_decl |
                           fparams1_decl;
+                          
         fparams2_decl -> var_decl ':=' expr;
         fparams3_decl -> ID ':' 'array' 'of' var_type;
         
         methods -> methods method ';' |
                    method ';';
-        method -> method_mods method_hdr method_specs method_body |
-                  method_mods prop_hdr prop_body method_specs;
-                  
-        method_mods -> method_mods method_mod |
-                       ε;
-        method_mod -> 'class';
-        
-        method_specs -> method_specs ';' method_spec |
-                        ε;
-        method_spec -> 'virtual' |
-                       'override' |
-                       'reintroduce' |
-                       'default' |
-                       'abstract';
+        method -> method_hdr method_body |
+                  prop_hdr prop_body;
 
         method_hdr -> 'constructor' 'create' func_params |
                       'constructor' func_params |
@@ -153,7 +140,7 @@ RULES = """
         method_body -> ';' sub_sections block |
                        ';' block |
                        ':=' expr;
-        
+               
         prop_hdr -> 'property' var_decl |
                     'property' ind_prop_decl;
         

@@ -24,7 +24,7 @@ KEYWORDS = ('and', 'array', 'as', 'auto', 'begin',
             'reintroduce', 'virtual',
 
             'read', 'write', 'new', 'name',     # context keywords
-            'create', 'destroy', 'text',)
+            'create', 'destroy', 'text', 'static',)
 
 MULTICOMMENT_KIND1 = "MULTI_COMENT1"
 MULTICOMMENT_BOUNDS1 = MultiTokenBounds(MultiTokenBound('{', r'{'),
