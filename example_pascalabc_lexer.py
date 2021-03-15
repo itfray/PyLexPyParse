@@ -81,7 +81,7 @@ if __name__ == "__main__":
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from time import time
 
-    filename = "pascal_code.pas"
+    filename = "example_pascalabc_code.pas"
     data_reader = FileStrReader(filename, buffering=1024, encoding='utf-8-sig')
 
     lexer = ProgLangLexer(data_reader=data_reader,

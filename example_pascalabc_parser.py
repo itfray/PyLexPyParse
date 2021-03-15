@@ -371,7 +371,7 @@ RULES = """
                     STR
         """
 TOKENS = ('ID', 'NUM', 'STR',)
-STAB_FILENAME = "pascalabc_stab.prstab"
+STAB_FILENAME = "example_pascalabc_stab.prstab"
 
 
 if __name__ == "__main__":
@@ -382,7 +382,7 @@ if __name__ == "__main__":
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
     from sparser.sparser import SParser, ParseSyntaxError
     from work_with_syntax_tree import print_tokens_syntax_tree
-    from pascalabc_lexer import (CASE_SENSITIVE, SKIP_KIND,
+    from example_pascalabc_lexer import (CASE_SENSITIVE, SKIP_KIND,
                                  SPECIFICATION, ID_KIND,
                                  KEYWORD_KIND, KEYWORDS,
                                  MULTITOKENS)

@@ -2,6 +2,7 @@ from str_reader.str_reader import StrReader
 from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
 from sparser.sparser import SParser, print_sparse_tab, ReadingSTabFileErr
 from time import time
+from work_with_syntax_tree import print_tokens_syntax_tree
 import os.path
 
 
@@ -49,7 +50,7 @@ RULES = """
         """
 TOKENS = ('ID',)
 
-stab_filename = "stab_file.prstab"
+stab_filename = "example_simple_stab.prstab"
 parser = SParser(lexer=lexer,
                  tokens=TOKENS,
                  goal_nterm=GOAL_NTERM,
@@ -62,4 +63,4 @@ else:
     parser.create_sparse_tab()
     parser.write_stab_to_file(stab_filename)
 node = parser.parse()
-print(node)
+print_tokens_syntax_tree(parser, lexer, node)
