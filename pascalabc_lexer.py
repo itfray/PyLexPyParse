@@ -26,10 +26,10 @@ KEYWORDS = ('and', 'array', 'as', 'auto', 'begin',
             'read', 'write', 'new', 'name',     # context keywords
             'create', 'destroy', 'text', 'static',)
 
-MULTICOMMENT_KIND1 = "MULTI_COMENT1"
+MULTICOMMENT_KIND1 = SKIP_KIND + "MULTI_COMENT1"
 MULTICOMMENT_BOUNDS1 = MultiTokenBounds(MultiTokenBound('{', r'{'),
                                         MultiTokenBound('}', r'}'))
-MULTICOMMENT_KIND2 = "MULTI_COMENT2"
+MULTICOMMENT_KIND2 = SKIP_KIND + "MULTI_COMENT2"
 MULTICOMMENT_BOUNDS2 = MultiTokenBounds(MultiTokenBound('(*', r'\(\*'),
                                         MultiTokenBound('*)', r'\*\)'))
 MULTITOKENS = {
@@ -47,7 +47,7 @@ SPECIFICATION = [
     ('PTR', r'[\^@]'),
     ('LAMBDA', r'->'),
     ('COND', r'\?\[?'),
-    ('LINE_COMMENT', r'//.*'),
+    (SKIP_KIND + 'LINE_COMMENT', r'//.*'),
     ('OP_ASN', r'[-\+\*/:]='),
     ('OP_ARTHM', r'(\*\*|[-\*\+/])'),
     ('OP_COMP', r'(<>|[<>]?=|[<>])'),

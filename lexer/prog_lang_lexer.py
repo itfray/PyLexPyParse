@@ -45,9 +45,7 @@ class ProgLangLexer(Lexer):
         try:
             while True:
                 token = next(token_gen)                                     # get token
-                if token.kind == self.skip_kind:
-                    token = None                                            # skip token
-                elif token.kind == self.id_kind:
+                if token.kind == self.id_kind:
                     if not self.case_sensitive:
                         token.value = token.value.lower()
                     if token.value in self.__keywords:                       # token is identifier or keyword?
@@ -59,14 +57,19 @@ class ProgLangLexer(Lexer):
                         msg = f"Unexcepted character '{token.value}'" + \
                               f" in line {self.num_line} in column {self.num_column}!!!"
                         raise UnexceptedLexError(token.value, self.num_line, self.num_column, msg)
-                    yield token
+                    skip_kind_in = self.skip_kind in token.kind
+                    if not skip_kind_in:
+                        yield token
                     self._Lexer__token_regex = self.__multiregexs[kind]      # set compiled regex for multitoken
                     while token.value != bounds.end.value:                   # get values of multitoken
                         token = next(token_gen)
                         token.kind = kind
-                        yield token
+                        if not skip_kind_in:
+                            yield token
                     self._Lexer__token_regex = total_regex                   # comeback total regex
                     token = None
+                elif self.skip_kind in token.kind:
+                    token = None                                             # skip token
                 if not token is None:
                     yield token
         except StopIteration:

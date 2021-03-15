@@ -13,5 +13,12 @@ begin
   var p1, p2, pres: Person;
   p1 := new Person('Mike', 12);
   p2 := new Person('Kendal', 100);
-  writeln(pres);
+  writeln(pres); // Это коммуентарий
+  (* 
+      Это тоже комментарий 
+  *)
+  
+   {
+      Это тоже комментарий 
+   }
 end.
