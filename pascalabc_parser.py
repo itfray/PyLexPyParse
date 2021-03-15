@@ -96,7 +96,7 @@ RULES = """
         func_hdr -> 'procedure' sel_id func_params |
                     'function' sel_id func_params ':' var_type;
         
-        func_body ->  method_body
+        func_body ->  method_body |
                      ';' 'forward' |
                      ';' 'external' STR 'name' STR;
         
@@ -375,62 +375,72 @@ STAB_FILENAME = "pascalabc_stab.prstab"
 
 
 if __name__ == "__main__":
+    import argparse
     from time import time
     import os
     from str_reader.file_reader import FileStrReader
     from lexer.prog_lang_lexer import ProgLangLexer, UnexceptedLexError
-    from sparser.sparser import SParser
+    from sparser.sparser import SParser, ParseSyntaxError
     from work_with_syntax_tree import print_tokens_syntax_tree
     from pascalabc_lexer import (CASE_SENSITIVE, SKIP_KIND,
                                  SPECIFICATION, ID_KIND,
                                  KEYWORD_KIND, KEYWORDS,
                                  MULTITOKENS)
 
-    code_filename = "pascal_code.pas"
-    data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
-    lexer = ProgLangLexer(data_reader=data_reader,
-                          specification=SPECIFICATION,
-                          skip_kind=SKIP_KIND,
-                          keyword_kind=KEYWORD_KIND,
-                          id_kind=ID_KIND,
-                          keywords=KEYWORDS,
-                          multitokens=MULTITOKENS,
-                          case_sensitive=CASE_SENSITIVE)
-    t0 = time()
-    try:
-        for token in lexer.tokens():
-            print(f"{lexer.num_line}:{lexer.num_column}: " +
-                  f"(kind='{lexer.kinds[token.kind]}'; " +
-                  f"value='{lexer.lexemes[token.kind][token.value]}'; " +
-                  f"id=[{token.kind},{token.value}])")
-    except UnexceptedLexError as err:
-        print(err)
-    print(time() - t0, " sec")
-    print()
+    def main(code_filename):
+        data_reader = FileStrReader(code_filename, buffering=1024, encoding='utf-8-sig')
+        lexer = ProgLangLexer(data_reader=data_reader,
+                              specification=SPECIFICATION,
+                              skip_kind=SKIP_KIND,
+                              keyword_kind=KEYWORD_KIND,
+                              id_kind=ID_KIND,
+                              keywords=KEYWORDS,
+                              multitokens=MULTITOKENS,
+                              case_sensitive=CASE_SENSITIVE)
+        t0 = time()
+        try:
+            for token in lexer.tokens():
+                print(f"{lexer.num_line}:{lexer.num_column}: " +
+                      f"(kind='{lexer.kinds[token.kind]}'; " +
+                      f"value='{lexer.lexemes[token.kind][token.value]}'; " +
+                      f"id=[{token.kind},{token.value}])")
+        except UnexceptedLexError as err:
+            print(err)
+        print(time() - t0, " sec")
+        print()
 
-    parser = SParser(lexer=lexer)
-    t0 = time()
-    if os.path.exists(STAB_FILENAME) and \
-            os.path.isfile(STAB_FILENAME):
-        parser.read_stab_from_file(STAB_FILENAME)
-        print("sparse table readed")
-    else:
-        parser.tokens = TOKENS
-        parser.goal_nterm = GOAL_NTERM
-        parser.end_term = END_TERM
-        parser.empty_term = EMPTY_TERM
-        parser.parse_rules(RULES)
-        parser.create_sparse_tab()
-        parser.write_stab_to_file(STAB_FILENAME)
-        print("sparse table created")
-    print("time for sparse table: ", time() - t0, " sec")
-    print()
-    print("parser's rules: ")
-    for rule in parser.rules:
-        print(rule)
-    print()
-    t0 = time()
-    node = parser.parse()
-    print("parsing time: ", time() - t0, " sec")
-    print()
-    print_tokens_syntax_tree(parser, lexer, node)
+        parser = SParser(lexer=lexer)
+        t0 = time()
+        if os.path.exists(STAB_FILENAME) and \
+                os.path.isfile(STAB_FILENAME):
+            parser.read_stab_from_file(STAB_FILENAME)
+            print("sparse table readed")
+        else:
+            parser.tokens = TOKENS
+            parser.goal_nterm = GOAL_NTERM
+            parser.end_term = END_TERM
+            parser.empty_term = EMPTY_TERM
+            parser.parse_rules(RULES)
+            parser.create_sparse_tab()
+            parser.write_stab_to_file(STAB_FILENAME)
+            print("sparse table created")
+        print("time for sparse table: ", time() - t0, " sec")
+        print()
+        print("parser's rules: ")
+        for rule in parser.rules:
+            print(rule)
+        print()
+        t0 = time()
+        node = parser.parse()
+        print("parsing time: ", time() - t0, " sec")
+        print()
+        print_tokens_syntax_tree(parser, lexer, node)
+
+    parser = argparse.ArgumentParser(add_help=True, description="Pascal ABC parser script")
+
+    parser.add_argument(dest='code_file', type=str, help="Specifies file with Pascal ABC code!!!")
+    args = parser.parse_args()
+    try:
+        main(args.code_file)
+    except (UnexceptedLexError, ParseSyntaxError, FileNotFoundError) as err:
+        print(err)
